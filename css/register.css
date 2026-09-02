@@ -1,0 +1,617 @@
+/*=========================================
+        GOOGLE FONT & GLOBAL SETTINGS
+=========================================*/
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+}
+
+body{
+    background:#eef4ff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    padding:40px;
+}
+
+/*=========================================
+            MAIN CONTAINER
+=========================================*/
+
+.container{
+    width:1100px;
+    max-width:100%;
+    background:#ffffff;
+    border-radius:20px;
+    overflow:hidden;
+    display:flex;
+    box-shadow:0 15px 40px rgba(0,0,0,0.12);
+}
+
+/*=========================================
+            LEFT PANEL
+=========================================*/
+
+.left-panel{
+    width:40%;
+    background:#2563eb;
+    color:#ffffff;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    padding:50px 40px;
+    text-align:center;
+}
+
+.left-panel h2{
+    margin-top:30px;
+    font-size:30px;
+    font-weight:600;
+}
+
+.left-panel p{
+    margin-top:15px;
+    line-height:1.8;
+    font-size:16px;
+    color:#dbeafe;
+}
+
+/*=========================================
+        PASSPORT ILLUSTRATION
+=========================================*/
+
+.passport-card{
+
+    width:230px;
+    background:#ffffff;
+    border-radius:18px;
+    padding:25px;
+    position:relative;
+    box-shadow:0 10px 30px rgba(0,0,0,.20);
+
+}
+
+.passport-top{
+
+    text-align:center;
+    margin-bottom:20px;
+
+}
+
+.passport-top i{
+
+    font-size:55px;
+    color:#2563eb;
+
+}
+
+.passport-photo{
+
+    width:90px;
+    height:90px;
+    margin:auto;
+    border-radius:50%;
+    background:#dbeafe;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+}
+
+.passport-photo i{
+
+    font-size:42px;
+    color:#2563eb;
+
+}
+
+.passport-lines{
+
+    margin-top:25px;
+
+}
+
+.line{
+
+    height:10px;
+    background:#dbeafe;
+    border-radius:20px;
+    margin-bottom:12px;
+
+}
+
+.short{
+
+    width:70%;
+}
+
+/*=========================================
+            RIGHT PANEL
+=========================================*/
+
+.right-panel{
+
+    width:60%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:50px;
+
+}
+
+.register-box{
+
+    width:100%;
+    max-width:470px;
+
+}
+
+.register-box h1{
+
+    color:#1e3a8a;
+    font-size:34px;
+    margin-bottom:10px;
+
+}
+
+.register-box p{
+
+    color:#666;
+    margin-bottom:30px;
+    line-height:1.7;
+
+}
+/*=========================================
+            INPUT FIELDS
+=========================================*/
+
+.input-box{
+    margin-bottom:22px;
+}
+
+.input-box label{
+    display:block;
+    margin-bottom:8px;
+    color:#1e3a8a;
+    font-weight:500;
+}
+
+.input-box input{
+    width:100%;
+    padding:14px 16px;
+    border:2px solid #dbeafe;
+    border-radius:10px;
+    outline:none;
+    font-size:15px;
+    transition:.3s;
+    background:#fafcff;
+}
+
+.input-box input:focus{
+    border-color:#2563eb;
+    background:#ffffff;
+    box-shadow:0 0 8px rgba(37,99,235,.15);
+}
+
+/*=========================================
+        PASSWORD FIELD
+=========================================*/
+
+.password-field{
+    position:relative;
+}
+
+.password-field input{
+    padding-right:50px;
+}
+
+.toggle-password{
+    position:absolute;
+    right:18px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#777;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.toggle-password:hover{
+    color:#2563eb;
+}
+
+/*=========================================
+        REGISTER BUTTON
+=========================================*/
+
+.register-btn{
+    width:100%;
+    padding:15px;
+    border:none;
+    border-radius:10px;
+    background:#2563eb;
+    color:#ffffff;
+    font-size:17px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.3s;
+    margin-top:10px;
+}
+
+.register-btn:hover{
+    background:#1d4ed8;
+    transform:translateY(-2px);
+    box-shadow:0 10px 20px rgba(37,99,235,.25);
+}
+
+.register-btn:active{
+    transform:scale(.98);
+}
+
+/*=========================================
+            LOGIN LINK
+=========================================*/
+
+.login-link{
+    text-align:center;
+    margin-top:25px;
+}
+
+.login-link p{
+    color:#555;
+    font-size:15px;
+}
+
+.login-link a{
+    color:#2563eb;
+    font-weight:600;
+    text-decoration:none;
+    transition:.3s;
+}
+
+.login-link a:hover{
+    text-decoration:underline;
+}
+
+/*=========================================
+            INPUT ANIMATION
+=========================================*/
+
+.input-box input{
+    animation:fadeInput .6s ease;
+}
+
+@keyframes fadeInput{
+
+    from{
+        opacity:0;
+        transform:translateY(12px);
+    }
+
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+
+}
+
+/*=========================================
+            CARD HOVER
+=========================================*/
+
+.passport-card{
+    transition:.4s;
+}
+
+.passport-card:hover{
+    transform:translateY(-8px) rotate(-2deg);
+}
+
+.passport-photo{
+    transition:.4s;
+}
+
+.passport-card:hover .passport-photo{
+    transform:scale(1.05);
+}
+/*=========================================
+        RESPONSIVE DESIGN
+=========================================*/
+
+@media(max-width:992px){
+
+.container{
+
+    flex-direction:column;
+
+}
+
+.left-panel{
+
+    width:100%;
+    padding:50px 30px;
+
+}
+
+.right-panel{
+
+    width:100%;
+    padding:40px 30px;
+
+}
+
+.register-box{
+
+    max-width:100%;
+
+}
+
+.passport-card{
+
+    width:220px;
+
+}
+
+}
+
+@media(max-width:768px){
+
+body{
+
+    padding:20px;
+
+}
+
+.container{
+
+    border-radius:15px;
+
+}
+
+.left-panel h2{
+
+    font-size:26px;
+
+}
+
+.left-panel p{
+
+    font-size:15px;
+
+}
+
+.register-box h1{
+
+    font-size:30px;
+
+}
+
+.register-box p{
+
+    font-size:15px;
+
+}
+
+.input-box input{
+
+    padding:13px;
+
+    font-size:15px;
+
+}
+
+.register-btn{
+
+    font-size:16px;
+
+    padding:14px;
+
+}
+
+}
+
+@media(max-width:480px){
+
+body{
+
+    padding:15px;
+
+}
+
+.left-panel{
+
+    padding:40px 20px;
+
+}
+
+.right-panel{
+
+    padding:30px 20px;
+
+}
+
+.passport-card{
+
+    width:180px;
+
+    padding:20px;
+
+}
+
+.passport-photo{
+
+    width:70px;
+
+    height:70px;
+
+}
+
+.passport-photo i{
+
+    font-size:32px;
+
+}
+
+.left-panel h2{
+
+    font-size:22px;
+
+}
+
+.left-panel p{
+
+    font-size:14px;
+
+}
+
+.register-box h1{
+
+    font-size:26px;
+
+}
+
+.register-box p{
+
+    font-size:14px;
+
+}
+
+.input-box label{
+
+    font-size:14px;
+
+}
+
+.input-box input{
+
+    font-size:14px;
+
+}
+
+.register-btn{
+
+    font-size:15px;
+
+}
+
+.login-link p{
+
+    font-size:14px;
+
+}
+
+}
+
+/*=========================================
+        SMOOTH TRANSITIONS
+=========================================*/
+
+input,
+button,
+a,
+.passport-card{
+
+    transition:all .3s ease;
+
+}
+
+/*=========================================
+        BUTTON CLICK EFFECT
+=========================================*/
+
+.register-btn:active{
+
+    transform:scale(.97);
+
+}
+
+/*=========================================
+        INPUT PLACEHOLDER
+=========================================*/
+
+.input-box input::placeholder{
+
+    color:#999;
+
+}
+
+/*=========================================
+        CUSTOM SCROLLBAR
+=========================================*/
+
+::-webkit-scrollbar{
+
+    width:8px;
+
+}
+
+::-webkit-scrollbar-track{
+
+    background:#eef4ff;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:#2563eb;
+    border-radius:10px;
+
+}
+
+::-webkit-scrollbar-thumb:hover{
+
+    background:#1d4ed8;
+
+}
+
+/*=========================================
+        PAGE FADE ANIMATION
+=========================================*/
+
+.container{
+
+    animation:pageLoad .8s ease;
+
+}
+
+@keyframes pageLoad{
+
+    from{
+
+        opacity:0;
+        transform:translateY(30px);
+
+    }
+
+    to{
+
+        opacity:1;
+        transform:translateY(0);
+
+    }
+
+}
+
+/*=========================================
+        FOCUS EFFECT
+=========================================*/
+
+.input-box input:focus{
+
+    transform:scale(1.01);
+
+}
+
+/*=========================================
+        ICON HOVER EFFECT
+=========================================*/
+
+.toggle-password:hover{
+
+    transform:translateY(-50%) scale(1.15);
+
+}

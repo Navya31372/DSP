@@ -1,0 +1,1302 @@
+/*=================================================
+        DIGITAL SKILL PASSPORT
+              DASHBOARD
+==================================================*/
+
+/*==============================
+        GOOGLE FONT
+===============================*/
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+}
+
+body{
+
+    background:#eef2f7;
+
+    color:#1e293b;
+
+}
+
+/*==============================
+      DASHBOARD CONTAINER
+===============================*/
+
+.dashboard-container{
+
+    display:flex;
+
+    min-height:100vh;
+
+}
+
+/*==============================
+        SIDEBAR
+===============================*/
+
+.sidebar{
+
+    width:270px;
+
+    background:#0f172a;
+
+    color:#ffffff;
+
+    position:fixed;
+
+    left:0;
+
+    top:0;
+
+    height:100vh;
+
+    padding:25px;
+
+    overflow-y:auto;
+
+}
+
+.logo{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    margin-bottom:45px;
+
+}
+
+.logo i{
+
+    font-size:34px;
+
+    color:#10b981;
+
+}
+
+.logo h2{
+
+    font-size:28px;
+
+    font-weight:700;
+
+    color:#ffffff;
+
+}
+
+/*==============================
+        MENU
+===============================*/
+
+.menu{
+
+    list-style:none;
+
+}
+
+.menu li{
+
+    margin-bottom:12px;
+
+}
+
+.menu li a{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:15px;
+
+    padding:15px 18px;
+
+    color:#cbd5e1;
+
+    text-decoration:none;
+
+    border-radius:12px;
+
+    transition:.3s;
+
+    font-size:16px;
+
+}
+
+.menu li a i{
+
+    width:22px;
+
+    text-align:center;
+
+    font-size:18px;
+
+}
+
+.menu li a:hover{
+
+    background:#10b981;
+
+    color:#ffffff;
+
+    transform:translateX(6px);
+
+}
+
+.menu .active a{
+
+    background:#10b981;
+
+    color:#ffffff;
+
+}
+
+/*==============================
+        MAIN CONTENT
+===============================*/
+
+.main-content{
+
+    margin-left:270px;
+
+    width:calc(100% - 270px);
+
+    padding:30px;
+
+}
+
+/*==============================
+        TOP BAR
+===============================*/
+
+.topbar{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    background:#ffffff;
+
+    padding:18px 28px;
+
+    border-radius:18px;
+
+    box-shadow:0 8px 20px rgba(0,0,0,.08);
+
+    margin-bottom:30px;
+
+}
+
+.top-left{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:18px;
+
+}
+
+.top-left h2{
+
+    color:#0f172a;
+
+    font-size:28px;
+
+}
+
+.menu-toggle{
+
+    border:none;
+
+    background:#10b981;
+
+    color:#ffffff;
+
+    width:45px;
+
+    height:45px;
+
+    border-radius:10px;
+
+    cursor:pointer;
+
+    font-size:18px;
+
+}
+
+.top-right{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:30px;
+
+}
+
+/*==============================
+      NOTIFICATION
+===============================*/
+
+.notification{
+
+    position:relative;
+
+    cursor:pointer;
+
+}
+
+.notification i{
+
+    font-size:22px;
+
+    color:#334155;
+
+}
+
+.notification span{
+
+    position:absolute;
+
+    top:-8px;
+
+    right:-10px;
+
+    background:#ef4444;
+
+    color:#ffffff;
+
+    width:18px;
+
+    height:18px;
+
+    border-radius:50%;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    font-size:11px;
+
+}
+
+/*==============================
+      USER PROFILE
+===============================*/
+
+.user-profile{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+}
+
+.user-profile img{
+
+    width:50px;
+
+    height:50px;
+
+    border-radius:50%;
+
+    object-fit:cover;
+
+    border:3px solid #10b981;
+
+}
+
+.user-profile h4{
+
+    color:#0f172a;
+
+    font-size:16px;
+
+}
+
+.user-profile p{
+
+    color:#64748b;
+
+    font-size:13px;
+
+}
+/*==============================
+      WELCOME SECTION
+===============================*/
+
+.welcome-section{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    background:linear-gradient(135deg,#0f766e,#10b981);
+
+    color:#ffffff;
+
+    padding:35px;
+
+    border-radius:20px;
+
+    margin-bottom:35px;
+
+    box-shadow:0 12px 30px rgba(16,185,129,.25);
+
+}
+
+.welcome-text h1{
+
+    font-size:34px;
+
+    margin-bottom:10px;
+
+    font-weight:700;
+
+}
+
+.welcome-text h1 span{
+
+    color:#facc15;
+
+}
+
+.welcome-text p{
+
+    font-size:16px;
+
+    line-height:1.8;
+
+    max-width:650px;
+
+    opacity:.95;
+
+}
+
+/*==============================
+      EDIT PROFILE BUTTON
+===============================*/
+
+.edit-btn{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:14px 28px;
+
+    background:#ffffff;
+
+    color:#0f766e;
+
+    text-decoration:none;
+
+    border-radius:12px;
+
+    font-weight:600;
+
+    transition:.35s;
+
+}
+
+.edit-btn:hover{
+
+    transform:translateY(-3px);
+
+    background:#ecfdf5;
+
+}
+
+/*==============================
+      DASHBOARD CARDS
+===============================*/
+
+.dashboard-cards{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+
+    gap:25px;
+
+    margin-bottom:35px;
+
+}
+
+.card{
+
+    background:#ffffff;
+
+    border-radius:20px;
+
+    padding:25px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:20px;
+
+    box-shadow:0 10px 25px rgba(0,0,0,.08);
+
+    transition:.35s;
+
+}
+
+.card:hover{
+
+    transform:translateY(-8px);
+
+    box-shadow:0 18px 35px rgba(0,0,0,.12);
+
+}
+
+/*==============================
+      CARD ICON
+===============================*/
+
+.card-icon{
+
+    width:75px;
+
+    height:75px;
+
+    border-radius:18px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    color:#ffffff;
+
+    font-size:30px;
+
+}
+
+.card-details h4{
+
+    color:#475569;
+
+    font-size:15px;
+
+    margin-bottom:8px;
+
+}
+
+.card-details h2{
+
+    font-size:34px;
+
+    margin-bottom:5px;
+
+    color:#0f172a;
+
+}
+
+.card-details p{
+
+    color:#64748b;
+
+    font-size:14px;
+
+}
+
+/*==============================
+      SKILLS CARD
+===============================*/
+
+.skills-card{
+
+    border-left:6px solid #10b981;
+
+}
+
+.skills-card .card-icon{
+
+    background:#10b981;
+
+}
+
+/*==============================
+      PROJECTS CARD
+===============================*/
+
+.projects-card{
+
+    border-left:6px solid #8b5cf6;
+
+}
+
+.projects-card .card-icon{
+
+    background:#8b5cf6;
+
+}
+
+/*==============================
+    CERTIFICATES CARD
+===============================*/
+
+.certificates-card{
+
+    border-left:6px solid #f59e0b;
+
+}
+
+.certificates-card .card-icon{
+
+    background:#f59e0b;
+
+}
+
+/*==============================
+    ACHIEVEMENTS CARD
+===============================*/
+
+.achievements-card{
+
+    border-left:6px solid #06b6d4;
+
+}
+
+.achievements-card .card-icon{
+
+    background:#06b6d4;
+
+}
+/*==============================
+      DASHBOARD CONTENT
+===============================*/
+
+.dashboard-content{
+
+    display:grid;
+
+    grid-template-columns:2fr 1fr;
+
+    gap:30px;
+
+    margin-bottom:35px;
+
+}
+
+/*==============================
+      COMMON PANEL
+===============================*/
+
+.activity-panel,
+.profile-summary{
+
+    background:#ffffff;
+
+    border-radius:20px;
+
+    padding:25px;
+
+    box-shadow:0 10px 25px rgba(0,0,0,.08);
+
+}
+
+.panel-header{
+
+    margin-bottom:20px;
+
+    border-bottom:2px solid #f1f5f9;
+
+    padding-bottom:12px;
+
+}
+
+.panel-header h3{
+
+    color:#0f172a;
+
+    font-size:22px;
+
+}
+
+/*==============================
+      ACTIVITY LIST
+===============================*/
+
+.activity-list{
+
+    list-style:none;
+
+}
+
+.activity-list li{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:18px 0;
+
+    border-bottom:1px solid #e2e8f0;
+
+    font-size:15px;
+
+    color:#334155;
+
+}
+
+.activity-list li:last-child{
+
+    border-bottom:none;
+
+}
+
+.activity-list li i{
+
+    color:#10b981;
+
+    margin-right:12px;
+
+    font-size:18px;
+
+}
+
+.activity-list li span{
+
+    color:#94a3b8;
+
+    font-size:13px;
+
+    font-weight:500;
+
+}
+
+/*==============================
+      PROFILE CARD
+===============================*/
+
+.profile-card{
+
+    text-align:center;
+
+}
+
+.profile-card img{
+
+    width:120px;
+
+    height:120px;
+
+    border-radius:50%;
+
+    object-fit:cover;
+
+    border:5px solid #10b981;
+
+    margin-bottom:18px;
+
+}
+
+.profile-card h3{
+
+    font-size:24px;
+
+    color:#0f172a;
+
+    margin-bottom:8px;
+
+}
+
+.profile-card p{
+
+    color:#64748b;
+
+    margin-bottom:30px;
+
+}
+
+/*==============================
+      PROGRESS BARS
+===============================*/
+
+.progress-group{
+
+    margin-bottom:22px;
+
+    text-align:left;
+
+}
+
+.progress-group label{
+
+    display:block;
+
+    margin-bottom:8px;
+
+    color:#334155;
+
+    font-weight:600;
+
+}
+
+.progress-bar{
+
+    width:100%;
+
+    height:14px;
+
+    background:#e2e8f0;
+
+    border-radius:30px;
+
+    overflow:hidden;
+
+}
+
+.progress-fill{
+
+    height:100%;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    color:#ffffff;
+
+    font-size:12px;
+
+    font-weight:600;
+
+    border-radius:30px;
+
+}
+
+.profile-progress{
+
+    width:75%;
+
+    background:linear-gradient(90deg,#10b981,#059669);
+
+}
+
+.skill-progress{
+
+    width:60%;
+
+    background:linear-gradient(90deg,#8b5cf6,#7c3aed);
+
+}
+
+/*==============================
+      QUICK ACTIONS
+===============================*/
+
+.quick-actions{
+
+    background:#ffffff;
+
+    border-radius:20px;
+
+    padding:30px;
+
+    box-shadow:0 10px 25px rgba(0,0,0,.08);
+
+    margin-bottom:35px;
+
+}
+
+.quick-actions h2{
+
+    color:#0f172a;
+
+    margin-bottom:25px;
+
+}
+
+.action-buttons{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+
+    gap:20px;
+
+}
+
+.action-btn{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    gap:12px;
+
+    padding:18px;
+
+    text-decoration:none;
+
+    border-radius:15px;
+
+    font-weight:600;
+
+    color:#ffffff;
+
+    transition:.35s;
+
+}
+
+.action-btn:nth-child(1){
+
+    background:#10b981;
+
+}
+
+.action-btn:nth-child(2){
+
+    background:#8b5cf6;
+
+}
+
+.action-btn:nth-child(3){
+
+    background:#f59e0b;
+
+}
+
+.action-btn:nth-child(4){
+
+    background:#06b6d4;
+
+}
+
+.action-btn:hover{
+
+    transform:translateY(-5px);
+
+    box-shadow:0 15px 25px rgba(0,0,0,.15);
+
+}
+
+/*==============================
+      FOOTER
+===============================*/
+
+.dashboard-footer{
+
+    text-align:center;
+
+    padding:20px;
+
+    color:#64748b;
+
+    font-size:15px;
+
+}
+/*==============================
+        CARD ANIMATIONS
+===============================*/
+
+.card,
+.activity-panel,
+.profile-summary,
+.quick-actions{
+
+    animation:fadeUp .8s ease;
+
+}
+
+@keyframes fadeUp{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(30px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}
+
+/*==============================
+      SIDEBAR SCROLLBAR
+===============================*/
+
+.sidebar::-webkit-scrollbar{
+
+    width:8px;
+
+}
+
+.sidebar::-webkit-scrollbar-track{
+
+    background:#0f172a;
+
+}
+
+.sidebar::-webkit-scrollbar-thumb{
+
+    background:#10b981;
+
+    border-radius:20px;
+
+}
+
+/*==============================
+      HOVER EFFECTS
+===============================*/
+
+.logo{
+
+    transition:.3s;
+
+}
+
+.logo:hover{
+
+    transform:scale(1.05);
+
+}
+
+.notification{
+
+    transition:.3s;
+
+}
+
+.notification:hover{
+
+    transform:scale(1.1);
+
+}
+
+.user-profile{
+
+    transition:.3s;
+
+}
+
+.user-profile:hover{
+
+    transform:translateY(-3px);
+
+}
+
+.activity-list li{
+
+    transition:.3s;
+
+}
+
+.activity-list li:hover{
+
+    background:#f8fafc;
+
+    padding-left:10px;
+
+    border-radius:10px;
+
+}
+
+.progress-fill{
+
+    transition:width 1s ease;
+
+}
+
+/*==============================
+      RESPONSIVE DESIGN
+===============================*/
+
+@media(max-width:992px){
+
+.sidebar{
+
+    width:90px;
+
+    padding:20px 10px;
+
+}
+
+.logo h2{
+
+    display:none;
+
+}
+
+.menu li a{
+
+    justify-content:center;
+
+    padding:15px;
+
+}
+
+.menu li a span{
+
+    display:none;
+
+}
+
+.menu li a i{
+
+    margin:0;
+
+    font-size:20px;
+
+}
+
+.main-content{
+
+    margin-left:90px;
+
+    width:calc(100% - 90px);
+
+}
+
+.dashboard-content{
+
+    grid-template-columns:1fr;
+
+}
+
+.welcome-section{
+
+    flex-direction:column;
+
+    text-align:center;
+
+    gap:25px;
+
+}
+
+.action-buttons{
+
+    grid-template-columns:repeat(2,1fr);
+
+}
+
+}
+
+@media(max-width:768px){
+
+.main-content{
+
+    margin-left:0;
+
+    width:100%;
+
+    padding:20px;
+
+}
+
+.sidebar{
+
+    position:relative;
+
+    width:100%;
+
+    height:auto;
+
+    display:flex;
+
+    flex-direction:column;
+
+}
+
+.menu{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,1fr);
+
+    gap:10px;
+
+}
+
+.logo{
+
+    justify-content:center;
+
+}
+
+.logo h2{
+
+    display:block;
+
+}
+
+.topbar{
+
+    flex-direction:column;
+
+    gap:20px;
+
+}
+
+.dashboard-cards{
+
+    grid-template-columns:1fr;
+
+}
+
+.action-buttons{
+
+    grid-template-columns:1fr;
+
+}
+
+.user-profile{
+
+    justify-content:center;
+
+}
+
+}
+
+@media(max-width:576px){
+
+body{
+
+    font-size:14px;
+
+}
+
+.top-left h2{
+
+    font-size:22px;
+
+}
+
+.welcome-text h1{
+
+    font-size:26px;
+
+}
+
+.welcome-text p{
+
+    font-size:14px;
+
+}
+
+.card{
+
+    flex-direction:column;
+
+    text-align:center;
+
+}
+
+.card-icon{
+
+    margin-bottom:15px;
+
+}
+
+.profile-card img{
+
+    width:100px;
+
+    height:100px;
+
+}
+
+.activity-list li{
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+    gap:6px;
+
+}
+
+.dashboard-footer{
+
+    font-size:13px;
+
+}
+
+}
+
+/*==============================
+      BUTTON EFFECTS
+===============================*/
+
+button,
+.action-btn,
+.edit-btn{
+
+    transition:.3s ease;
+
+}
+
+button:hover,
+.action-btn:hover,
+.edit-btn:hover{
+
+    cursor:pointer;
+
+}
+
+/*==============================
+      GLOBAL SCROLLBAR
+===============================*/
+
+::-webkit-scrollbar{
+
+    width:10px;
+
+}
+
+::-webkit-scrollbar-track{
+
+    background:#e2e8f0;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:#10b981;
+
+    border-radius:20px;
+
+}
+
+::-webkit-scrollbar-thumb:hover{
+
+    background:#059669;
+
+}
+
+/*==============================
+      END OF FILE
+===============================*/
