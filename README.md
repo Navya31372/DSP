@@ -3,7 +3,7 @@ Digital Skill Passport
 Digital Skill Passport is a web-based platform designed to help students maintain and showcase their skills, projects, certifications, workshops, internships, and achievements in one organized digital profile. It provides a structured alternative to maintaining these details separately in a traditional résumé.
 
 Technologies Used
-* Frontend: HTML, CSS, JavaScript
+* Frontend: HTML, CSS and JavaScript
 * Backend: PHP
 * Database: MySQL
 * Local Server: XAMPP
@@ -23,7 +23,7 @@ Navya Krishnan mainly worked on the backend development, including PHP–MySQL d
 The frontend and backend were developed together and integrated to make the website functional and database-driven.
 
 Current Status
-Most of the major pages and backend functionalities have been completed and connected to the database. The remaining backend work is to connect three pages with the database:
+Most of the major pages and backend functionalities have been completed and connected to this database. The remaining backend work is to connect three pages with the database:
 
 1. internships.php
 2. achievements.php
