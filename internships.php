@@ -16,6 +16,71 @@ if (!isset($_SESSION["user_id"])) {
 
 }
 
+
+require_once "db.php";
+
+
+$user_id = $_SESSION["user_id"];
+
+
+// ========================================
+// GET LOGGED-IN USER DETAILS
+// ========================================
+
+$sql = "SELECT full_name, account_type
+        FROM users
+        WHERE user_id = ?";
+
+$stmt = mysqli_prepare($conn, $sql);
+
+mysqli_stmt_bind_param($stmt, "i", $user_id);
+
+mysqli_stmt_execute($stmt);
+
+$result = mysqli_stmt_get_result($stmt);
+
+$user = mysqli_fetch_assoc($result);
+
+mysqli_stmt_close($stmt);
+
+
+// ========================================
+// GET PROFILE PHOTO
+// ========================================
+
+$profilePhoto = "images/profile.jpg";
+
+$sql = "SELECT profile_photo
+        FROM profile
+        WHERE user_id = ?";
+
+$stmt = mysqli_prepare($conn, $sql);
+
+mysqli_stmt_bind_param($stmt, "i", $user_id);
+
+mysqli_stmt_execute($stmt);
+
+$result = mysqli_stmt_get_result($stmt);
+
+$profile = mysqli_fetch_assoc($result);
+
+if (!empty($profile["profile_photo"])) {
+
+    $profilePhoto = $profile["profile_photo"];
+
+}
+
+mysqli_stmt_close($stmt);
+
+
+// ========================================
+// USER DISPLAY VALUES
+// ========================================
+
+$full_name = $user["full_name"] ?? "User";
+
+$account_type = $user["account_type"] ?? "Student";
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -964,7 +1029,28 @@ if (!isset($_SESSION["user_id"])) {
 
                         </div>
 
+<!-- Company Website -->
 
+<div class="form-group">
+
+    <label for="companyWebsite">
+
+        Company Website
+
+    </label>
+
+    <div class="input-with-icon">
+
+        <i class="fa-solid fa-globe"></i>
+
+        <input type="url"
+               id="companyWebsite"
+               name="company_website"
+               placeholder="https://example.com">
+
+    </div>
+
+</div>
 
                         <!-- Location -->
 
@@ -984,56 +1070,6 @@ if (!isset($_SESSION["user_id"])) {
                                        id="internshipLocation"
                                        name="location"
                                        placeholder="e.g. Kochi, Kerala">
-
-                            </div>
-
-                        </div>
-
-
-
-                        <!-- Company Website -->
-
-                        <div class="form-group">
-
-                            <label for="companyWebsite">
-
-                                Company Website
-
-                            </label>
-
-                            <div class="input-with-icon">
-
-                                <i class="fa-solid fa-globe"></i>
-
-                                <input type="url"
-                                       id="companyWebsite"
-                                       name="company_website"
-                                       placeholder="https://example.com">
-
-                            </div>
-
-                        </div>
-
-
-
-                        <!-- Internship URL -->
-
-                        <div class="form-group">
-
-                            <label for="internshipUrl">
-
-                                Internship / Program URL
-
-                            </label>
-
-                            <div class="input-with-icon">
-
-                                <i class="fa-solid fa-link"></i>
-
-                                <input type="url"
-                                       id="internshipUrl"
-                                       name="internship_url"
-                                       placeholder="https://example.com/internship">
 
                             </div>
 
@@ -1192,37 +1228,6 @@ if (!isset($_SESSION["user_id"])) {
 
 
                     <!--========================================
-                         KEY ACHIEVEMENTS
-                    =========================================-->
-
-                    <div class="form-section-title">
-
-                        <i class="fa-solid fa-trophy"></i>
-
-                        Internship Achievements
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label for="internshipAchievements">
-
-                            Key Achievements
-
-                        </label>
-
-                        <textarea id="internshipAchievements"
-                                  name="achievements"
-                                  rows="4"
-                                  maxlength="800"
-                                  placeholder="Mention important achievements, contributions or results achieved during the internship..."></textarea>
-
-                    </div>
-
-
-
-                    <!--========================================
                          CERTIFICATE UPLOAD
                     =========================================-->
 
@@ -1336,99 +1341,6 @@ if (!isset($_SESSION["user_id"])) {
                         </small>
 
                     </div>
-
-
-
-                    <!--========================================
-                         INTERNSHIP VISIBILITY
-                    =========================================-->
-
-                    <div class="form-section-title">
-
-                        <i class="fa-solid fa-eye"></i>
-
-                        Internship Visibility
-
-                    </div>
-
-
-                    <div class="visibility-options">
-
-
-                        <!-- Public -->
-
-                        <label class="visibility-option">
-
-
-                            <input type="radio"
-                                   name="visibility"
-                                   value="public"
-                                   checked>
-
-
-                            <span class="custom-radio"></span>
-
-
-                            <span class="visibility-content">
-
-                                <strong>
-
-                                    Public
-
-                                </strong>
-
-
-                                <small>
-
-                                    Show this internship on
-                                    your digital skill passport.
-
-                                </small>
-
-                            </span>
-
-
-                        </label>
-
-
-
-                        <!-- Private -->
-
-                        <label class="visibility-option">
-
-
-                            <input type="radio"
-                                   name="visibility"
-                                   value="private">
-
-
-                            <span class="custom-radio"></span>
-
-
-                            <span class="visibility-content">
-
-                                <strong>
-
-                                    Private
-
-                                </strong>
-
-
-                                <small>
-
-                                    Keep this internship hidden
-                                    from your public profile.
-
-                                </small>
-
-                            </span>
-
-
-                        </label>
-
-
-                    </div>
-
 
 
                     <!--========================================
