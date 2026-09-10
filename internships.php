@@ -22,6 +22,120 @@ require_once "db.php";
 
 $user_id = $_SESSION["user_id"];
 
+// SUCCESS MESSAGE
+$successMessage = "";
+
+if (isset($_GET["success"])) {
+
+    if ($_GET["success"] === "added") {
+        $successMessage = "Internship added successfully!";
+    }
+
+    if ($_GET["success"] === "updated") {
+        $successMessage = "Internship updated successfully!";
+    }
+    if ($_GET["success"] === "deleted") {
+    $successMessage = "Internship deleted successfully!";
+}
+}
+
+
+// DELETE INTERNSHIP
+if (
+    $_SERVER["REQUEST_METHOD"] === "POST" &&
+    isset($_POST["delete_internship"]) &&
+    $_POST["delete_internship"] === "1"
+) {
+
+    $delete_id = (int)($_POST["internship_id"] ?? 0);
+
+    if ($delete_id <= 0) {
+        die("Invalid internship ID.");
+    }
+
+    // Get the files belonging to this user's internship
+    $sql = "SELECT certificate_file, supporting_document
+            FROM internships
+            WHERE internship_id = ?
+            AND user_id = ?";
+
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "ii",
+        $delete_id,
+        $user_id
+    );
+
+    mysqli_stmt_execute($stmt);
+
+    $result = mysqli_stmt_get_result($stmt);
+    $internship = mysqli_fetch_assoc($result);
+
+    mysqli_stmt_close($stmt);
+
+    if (!$internship) {
+        die("Internship record not found.");
+    }
+
+    $certificate_file =
+        $internship["certificate_file"] ?? "";
+
+    $supporting_document =
+        $internship["supporting_document"] ?? "";
+
+    // Delete database record
+    $sql = "DELETE FROM internships
+            WHERE internship_id = ?
+            AND user_id = ?";
+
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "ii",
+        $delete_id,
+        $user_id
+    );
+
+    if (!mysqli_stmt_execute($stmt)) {
+        die("Failed to delete internship: " . mysqli_stmt_error($stmt));
+    }
+
+    mysqli_stmt_close($stmt);
+
+    // Delete certificate file
+if (
+    !empty($certificate_file)
+) {
+
+    $certificatePath =
+        __DIR__ . "/" . $certificate_file;
+
+    if (file_exists($certificatePath)) {
+        unlink($certificatePath);
+    }
+}
+
+
+// Delete supporting document
+if (
+    !empty($supporting_document)
+) {
+
+    $supportingDocumentPath =
+        __DIR__ . "/" . $supporting_document;
+
+    if (file_exists($supportingDocumentPath)) {
+        unlink($supportingDocumentPath);
+    }
+}
+
+    header("Location: internships.php?success=deleted");
+    exit;
+}
+
 
 // ========================================
 // GET LOGGED-IN USER DETAILS
@@ -72,6 +186,135 @@ if (!empty($profile["profile_photo"])) {
 
 mysqli_stmt_close($stmt);
 
+// ========================================
+// NOTIFICATIONS
+// ========================================
+
+$notifications = [];
+
+$sql = "SELECT message, created_at
+        FROM notifications
+        WHERE user_id = ?
+        ORDER BY created_at DESC";
+
+$stmt = mysqli_prepare($conn, $sql);
+
+mysqli_stmt_bind_param($stmt, "i", $user_id);
+
+mysqli_stmt_execute($stmt);
+
+$result = mysqli_stmt_get_result($stmt);
+
+while ($row = mysqli_fetch_assoc($result)) {
+
+    $notifications[] = $row;
+
+}
+
+mysqli_stmt_close($stmt);
+
+
+// ========================================
+// UNREAD NOTIFICATION COUNT
+// ========================================
+
+$sql = "SELECT COUNT(*) AS unread_count
+        FROM notifications
+        WHERE user_id = ?
+        AND is_read = 0";
+
+$stmt = mysqli_prepare($conn, $sql);
+
+mysqli_stmt_bind_param($stmt, "i", $user_id);
+
+mysqli_stmt_execute($stmt);
+
+$result = mysqli_stmt_get_result($stmt);
+
+$row = mysqli_fetch_assoc($result);
+
+$unread_notifications = $row["unread_count"];
+
+mysqli_stmt_close($stmt);
+
+
+// ========================================
+// INTERNSHIP SUMMARY COUNTS
+// ========================================
+
+$total_internships = 0;
+$completed_internships = 0;
+$ongoing_internships = 0;
+$upcoming_internships = 0;
+
+$sql = "SELECT
+            COUNT(*) AS total,
+            SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) AS completed,
+            SUM(CASE WHEN status = 'Ongoing' THEN 1 ELSE 0 END) AS ongoing,
+            SUM(CASE WHEN status = 'Upcoming' THEN 1 ELSE 0 END) AS upcoming
+        FROM internships
+        WHERE user_id = ?";
+
+$stmt = mysqli_prepare($conn, $sql);
+
+mysqli_stmt_bind_param($stmt, "i", $user_id);
+
+mysqli_stmt_execute($stmt);
+
+$result = mysqli_stmt_get_result($stmt);
+
+$internshipCounts = mysqli_fetch_assoc($result);
+
+$total_internships =
+    (int)($internshipCounts["total"] ?? 0);
+
+$completed_internships =
+    (int)($internshipCounts["completed"] ?? 0);
+
+$ongoing_internships =
+    (int)($internshipCounts["ongoing"] ?? 0);
+
+$upcoming_internships =
+    (int)($internshipCounts["upcoming"] ?? 0);
+
+
+mysqli_stmt_close($stmt);
+
+// ========================================
+// TOTAL SKILLS GAINED
+// ========================================
+
+$skills_gained_count = 0;
+
+$sql = "SELECT skills_gained
+        FROM internships
+        WHERE user_id = ?";
+
+$stmt = mysqli_prepare($conn, $sql);
+
+mysqli_stmt_bind_param($stmt, "i", $user_id);
+
+mysqli_stmt_execute($stmt);
+
+$result = mysqli_stmt_get_result($stmt);
+
+while ($row = mysqli_fetch_assoc($result)) {
+
+    if (!empty($row["skills_gained"])) {
+
+        $skills = array_filter(
+            array_map(
+                "trim",
+                explode(",", $row["skills_gained"])
+            )
+        );
+
+        $skills_gained_count += count($skills);
+    }
+}
+
+mysqli_stmt_close($stmt);
+
 
 // ========================================
 // USER DISPLAY VALUES
@@ -81,7 +324,423 @@ $full_name = $user["full_name"] ?? "User";
 
 $account_type = $user["account_type"] ?? "Student";
 
+
+// ========================================
+// SAVE INTERNSHIP
+// ========================================
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+
+$internship_id = (int)($_POST["internship_id"] ?? 0);
+
+    $internship_title = trim($_POST["internship_title"] ?? "");
+    $internship_type = trim($_POST["internship_type"] ?? "");
+    $company_name = trim($_POST["company_name"] ?? "");
+    $department = trim($_POST["department"] ?? "");
+    $role = trim($_POST["role"] ?? "");
+    $supervisor = trim($_POST["supervisor"] ?? "");
+    $start_date = $_POST["start_date"] ?? "";
+    $end_date = $_POST["end_date"] ?? "";
+    $duration = trim($_POST["duration"] ?? "");
+    $status = trim($_POST["status"] ?? "");
+    $work_mode = trim($_POST["work_mode"] ?? "");
+    $location = trim($_POST["location"] ?? "");
+    $company_website = trim($_POST["company_website"] ?? "");
+    $description = trim($_POST["description"] ?? "");
+    $responsibilities = trim($_POST["responsibilities"] ?? "");
+    $technologies = trim($_POST["technologies"] ?? "");
+    $skills_gained = trim($_POST["skills_gained"] ?? "");
+
+    // ----------------------------------------
+    // REQUIRED FIELD CHECK
+    // ----------------------------------------
+
+    if (
+        $internship_title === "" ||
+        $internship_type === "" ||
+        $company_name === "" ||
+        $role === "" ||
+        $start_date === "" ||
+        $end_date === "" ||
+        $status === "" ||
+        $work_mode === "" ||
+        $description === ""
+    ) {
+
+        die("Please fill in all required internship fields.");
+
+    }
+
+
+    // ----------------------------------------
+    // DATE VALIDATION
+    // ----------------------------------------
+
+    if ($end_date < $start_date) {
+
+        die("End date cannot be before start date.");
+
+    }
+
+
+    // ----------------------------------------
+    // UPLOAD DIRECTORIES
+    // ----------------------------------------
+
+    $certificateDirectory = "uploads/internships/certificates/";
+    $supportingDirectory = "uploads/internships/supporting/";
+
+    if (!is_dir($certificateDirectory)) {
+        mkdir($certificateDirectory, 0777, true);
+    }
+
+    if (!is_dir($supportingDirectory)) {
+        mkdir($supportingDirectory, 0777, true);
+    }
+
+
+    // ----------------------------------------
+    // CERTIFICATE FILE
+    // ----------------------------------------
+
+    $certificate_file = "";
+$old_certificate_file = "";
+$old_supporting_document = "";
+
+if ($internship_id > 0) {
+
+    $sql = "SELECT certificate_file, supporting_document
+            FROM internships
+            WHERE internship_id = ?
+            AND user_id = ?";
+
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "ii",
+        $internship_id,
+        $user_id
+    );
+
+    mysqli_stmt_execute($stmt);
+
+    $result = mysqli_stmt_get_result($stmt);
+    $existingInternship = mysqli_fetch_assoc($result);
+
+    mysqli_stmt_close($stmt);
+
+    if (!$existingInternship) {
+        die("Internship record not found.");
+    }
+
+    $old_certificate_file =
+        $existingInternship["certificate_file"] ?? "";
+
+    $old_supporting_document =
+        $existingInternship["supporting_document"] ?? "";
+}
+
+if ($internship_id > 0) {
+    $certificate_file = $old_certificate_file;
+}
+
+    if (
+        isset($_FILES["certificate_file"]) &&
+        $_FILES["certificate_file"]["error"] === UPLOAD_ERR_OK
+    ) {
+
+        $certificateName =
+            basename($_FILES["certificate_file"]["name"]);
+
+        $certificateExtension =
+            strtolower(
+                pathinfo(
+                    $certificateName,
+                    PATHINFO_EXTENSION
+                )
+            );
+
+        $allowedExtensions = [
+            "jpg",
+            "jpeg",
+            "png",
+            "webp",
+            "pdf"
+        ];
+
+        if (!in_array(
+            $certificateExtension,
+            $allowedExtensions
+        )) {
+
+            die("Invalid certificate file type.");
+
+        }
+
+        $newCertificateName =
+            uniqid("certificate_", true) .
+            "." .
+            $certificateExtension;
+
+        $certificatePath =
+            $certificateDirectory .
+            $newCertificateName;
+
+        if (
+            !move_uploaded_file(
+                $_FILES["certificate_file"]["tmp_name"],
+                $certificatePath
+            )
+        ) {
+
+            die("Failed to upload certificate.");
+
+        }
+
+        $certificate_file = $certificatePath;
+
+    }
+
+
+    // ----------------------------------------
+    // SUPPORTING DOCUMENT
+    // ----------------------------------------
+
+    $supporting_document = $old_supporting_document;
+
+    if (
+        isset($_FILES["supporting_document"]) &&
+        $_FILES["supporting_document"]["error"] === UPLOAD_ERR_OK
+    ) {
+
+        $supportingName =
+            basename($_FILES["supporting_document"]["name"]);
+
+        $supportingExtension =
+            strtolower(
+                pathinfo(
+                    $supportingName,
+                    PATHINFO_EXTENSION
+                )
+            );
+
+        $allowedExtensions = [
+            "jpg",
+            "jpeg",
+            "png",
+            "webp",
+            "pdf"
+        ];
+
+        if (!in_array(
+            $supportingExtension,
+            $allowedExtensions
+        )) {
+
+            die("Invalid supporting document type.");
+
+        }
+
+        $newSupportingName =
+            uniqid("supporting_", true) .
+            "." .
+            $supportingExtension;
+
+        $supportingPath =
+            $supportingDirectory .
+            $newSupportingName;
+
+        if (
+            !move_uploaded_file(
+                $_FILES["supporting_document"]["tmp_name"],
+                $supportingPath
+            )
+        ) {
+
+            die("Failed to upload supporting document.");
+
+        }
+
+        $supporting_document = $supportingPath;
+
+    }
+
+
+    if ($internship_id > 0) {
+
+    // ----------------------------------------
+    // UPDATE EXISTING INTERNSHIP
+    // ----------------------------------------
+
+    $sql = "UPDATE internships SET
+                internship_title = ?,
+                internship_type = ?,
+                company_name = ?,
+                department = ?,
+                role = ?,
+                supervisor = ?,
+                start_date = ?,
+                end_date = ?,
+                duration = ?,
+                status = ?,
+                work_mode = ?,
+                location = ?,
+                company_website = ?,
+                description = ?,
+                responsibilities = ?,
+                technologies = ?,
+                skills_gained = ?,
+                certificate_file = ?,
+                supporting_document = ?
+            WHERE internship_id = ?
+            AND user_id = ?";
+
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "sssssssssssssssssssii",
+        $internship_title,
+        $internship_type,
+        $company_name,
+        $department,
+        $role,
+        $supervisor,
+        $start_date,
+        $end_date,
+        $duration,
+        $status,
+        $work_mode,
+        $location,
+        $company_website,
+        $description,
+        $responsibilities,
+        $technologies,
+        $skills_gained,
+        $certificate_file,
+        $supporting_document,
+        $internship_id,
+        $user_id
+    );
+
+    if (!mysqli_stmt_execute($stmt)) {
+    die("Failed to update internship: " . mysqli_stmt_error($stmt));
+}
+
+mysqli_stmt_close($stmt);
+
+
+// ----------------------------------------
+// DELETE OLD FILES AFTER SUCCESSFUL UPDATE
+// ----------------------------------------
+
+// Delete old certificate if a new one was uploaded
+if (
+    !empty($old_certificate_file) &&
+    !empty($certificate_file) &&
+    $old_certificate_file !== $certificate_file
+) {
+
+    $oldCertificatePath =
+        __DIR__ . "/" . $old_certificate_file;
+
+    if (file_exists($oldCertificatePath)) {
+        unlink($oldCertificatePath);
+    }
+}
+
+
+// Delete old supporting document if a new one was uploaded
+if (
+    !empty($old_supporting_document) &&
+    !empty($supporting_document) &&
+    $old_supporting_document !== $supporting_document
+) {
+
+    $oldSupportingPath =
+        __DIR__ . "/" . $old_supporting_document;
+
+    if (file_exists($oldSupportingPath)) {
+        unlink($oldSupportingPath);
+    }
+}
+
+} else {
+
+    // ----------------------------------------
+    // INSERT NEW INTERNSHIP
+    // ----------------------------------------
+
+    $sql = "INSERT INTO internships (
+                user_id,
+                internship_title,
+                internship_type,
+                company_name,
+                department,
+                role,
+                supervisor,
+                start_date,
+                end_date,
+                duration,
+                status,
+                work_mode,
+                location,
+                company_website,
+                description,
+                responsibilities,
+                technologies,
+                skills_gained,
+                certificate_file,
+                supporting_document
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "isssssssssssssssssss",
+        $user_id,
+        $internship_title,
+        $internship_type,
+        $company_name,
+        $department,
+        $role,
+        $supervisor,
+        $start_date,
+        $end_date,
+        $duration,
+        $status,
+        $work_mode,
+        $location,
+        $company_website,
+        $description,
+        $responsibilities,
+        $technologies,
+        $skills_gained,
+        $certificate_file,
+        $supporting_document
+    );
+
+    if (!mysqli_stmt_execute($stmt)) {
+        die("Failed to save internship: " . mysqli_stmt_error($stmt));
+    }
+
+    mysqli_stmt_close($stmt);
+}
+
+if ($internship_id > 0) {
+    header("Location: internships.php?success=updated");
+} else {
+    header("Location: internships.php?success=added");
+}
+exit;
+}
+
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -123,6 +782,13 @@ $account_type = $user["account_type"] ?? "Student";
 
 
 <body>
+
+<?php if (!empty($successMessage)): ?>
+    <div class="success-message" id="successMessage">
+        <i class="fa-solid fa-circle-check"></i>
+        <span><?= htmlspecialchars($successMessage) ?></span>
+    </div>
+<?php endif; ?>
 
 
     <!--==================================================
@@ -337,8 +1003,9 @@ $account_type = $user["account_type"] ?? "Student";
                         <i class="fa-solid fa-magnifying-glass"></i>
 
                         <input type="search"
-                               placeholder="Search internships..."
-                               aria-label="Search internships">
+       id="internshipSearch"
+       placeholder="Search internships..."
+       aria-label="Search internships">
 
                     </div>
 
@@ -346,15 +1013,53 @@ $account_type = $user["account_type"] ?? "Student";
 
                     <!-- Notification -->
 
-                    <button class="notification"
-                            type="button"
-                            aria-label="Notifications">
+                    <div class="notification">
 
-                        <i class="fa-regular fa-bell"></i>
+    <i class="fa-regular fa-bell"></i>
 
-                        <span>3</span>
+    <?php if ($unread_notifications > 0): ?>
 
-                    </button>
+        <span class="notification-badge">
+            <?= $unread_notifications ?>
+        </span>
+
+    <?php endif; ?>
+
+
+    <div class="notification-popup">
+
+        <h4>Notifications</h4>
+
+
+        <?php if (count($notifications) > 0): ?>
+
+            <?php foreach ($notifications as $notification): ?>
+
+                <div class="notification-item">
+
+                    <p>
+                        <?= htmlspecialchars($notification["message"]) ?>
+                    </p>
+
+                    <small>
+                        <?= htmlspecialchars($notification["created_at"]) ?>
+                    </small>
+
+                </div>
+
+            <?php endforeach; ?>
+
+        <?php else: ?>
+
+            <p class="no-notifications">
+                No notifications
+            </p>
+
+        <?php endif; ?>
+
+    </div>
+
+</div>
 
 
 
@@ -362,18 +1067,22 @@ $account_type = $user["account_type"] ?? "Student";
 
                     <div class="user-profile">
 
-                        <img src="images/profile.jpg"
-                             alt="Profile">
+    <img src="<?php echo htmlspecialchars($profilePhoto); ?>"
+         alt="Profile">
 
-                        <div>
+    <div>
 
-                            <h4>My Profile</h4>
+        <h4>
+            <?php echo htmlspecialchars($full_name); ?>
+        </h4>
 
-                            <p>Student</p>
+        <p>
+            <?php echo htmlspecialchars($account_type); ?>
+        </p>
 
-                        </div>
+    </div>
 
-                    </div>
+</div>
 
 
                 </div>
@@ -464,11 +1173,7 @@ $account_type = $user["account_type"] ?? "Student";
 
                     <div>
 
-                        <h2 id="totalInternshipCount">
-
-                            4
-
-                        </h2>
+                        <h2><?= $total_internships ?></h2>
 
 
                         <p>
@@ -498,11 +1203,7 @@ $account_type = $user["account_type"] ?? "Student";
 
                     <div>
 
-                        <h2 id="completedInternshipCount">
-
-                            3
-
-                        </h2>
+                        <h2><?= $completed_internships ?></h2>
 
 
                         <p>
@@ -532,11 +1233,7 @@ $account_type = $user["account_type"] ?? "Student";
 
                     <div>
 
-                        <h2 id="ongoingInternshipCount">
-
-                            1
-
-                        </h2>
+                        <h2><?= $ongoing_internships ?></h2>
 
 
                         <p>
@@ -568,9 +1265,9 @@ $account_type = $user["account_type"] ?? "Student";
 
                         <h2 id="internshipSkillsCount">
 
-                            12
+    <?= $skills_gained_count ?>
 
-                        </h2>
+</h2>
 
 
                         <p>
@@ -588,6 +1285,8 @@ $account_type = $user["account_type"] ?? "Student";
             </section>
 
 
+
+            
 
             <!--==================================================
                      ADD INTERNSHIP FORM SECTION
@@ -614,24 +1313,30 @@ $account_type = $user["account_type"] ?? "Student";
 
                         <div>
 
-                            <h2>
+                            <h2 id="internshipFormTitle">
 
-                                Add Internship
+    Add Internship
 
-                            </h2>
+</h2>
 
 
-                            <p>
+<p id="internshipFormDescription">
 
-                                Enter the details of your
-                                internship experience.
+    Enter the details of your
+    internship experience.
 
-                            </p>
+</p>
 
                         </div>
 
 
                     </div>
+
+
+
+                    
+
+                    
 
 
 
@@ -642,9 +1347,14 @@ $account_type = $user["account_type"] ?? "Student";
                           method="POST"
                           enctype="multipart/form-data">
 
+                        <input type="hidden"
+       name="internship_id"
+       id="editingInternshipId"
+       value="">
+
 
                         <!-- Part 1B continues here -->
-                                             <!--========================================
+                <!--========================================
                          INTERNSHIP INFORMATION
                     =========================================-->
 
@@ -1362,13 +2072,9 @@ $account_type = $user["account_type"] ?? "Student";
 
 
                         <button type="reset"
-                                class="reset-internship-btn">
-
-                            <i class="fa-solid fa-rotate-right"></i>
-
-                            Reset
-
-                        </button>
+        id="resetInternshipBtn"
+        class="reset-internship-btn">
+            </button>
 
 
                     </div>
@@ -1475,701 +2181,256 @@ $account_type = $user["account_type"] ?? "Student";
                      id="internshipsGrid">
 
 
+<?php
 
-                    <!--==============================================
-                              INTERNSHIP CARD 1
-                    ===============================================-->
+// ========================================
+// GET USER'S INTERNSHIPS
+// ========================================
 
-                    <article class="internship-card"
-                             data-status="completed"
-                             data-type="technical">
+$sql = "SELECT *
+        FROM internships
+        WHERE user_id = ?
+        ORDER BY start_date DESC";
 
+$stmt = mysqli_prepare($conn, $sql);
 
-                        <!-- Card Top -->
+mysqli_stmt_bind_param($stmt, "i", $user_id);
 
-                        <div class="internship-card-top">
+mysqli_stmt_execute($stmt);
 
+$result = mysqli_stmt_get_result($stmt);
 
-                            <div class="company-logo">
+$internships = [];
 
-                                <i class="fa-solid fa-building"></i>
+while ($row = mysqli_fetch_assoc($result)) {
+    $internships[] = $row;
+}
 
-                            </div>
+mysqli_stmt_close($stmt);
 
 
-                            <div class="card-actions">
+// ========================================
+// DISPLAY INTERNSHIPS
+// ========================================
 
+foreach ($internships as $internship):
 
-                                <button type="button"
-                                        class="card-action edit-internship"
-                                        title="Edit Internship">
+    $status = strtolower($internship["status"] ?? "");
 
-                                    <i class="fa-solid fa-pen"></i>
+    // Make status values consistent for CSS/filtering
+    if ($status === "completed") {
+        $statusClass = "completed";
+    } elseif ($status === "ongoing") {
+        $statusClass = "ongoing";
+    } elseif ($status === "upcoming") {
+        $statusClass = "upcoming";
+    } else {
+        $statusClass = "";
+    }
 
-                                </button>
 
+    // Format dates
+    $startDateDisplay = !empty($internship["start_date"])
+        ? date("M Y", strtotime($internship["start_date"]))
+        : "-";
 
-                                <button type="button"
-                                        class="card-action delete-internship"
-                                        title="Delete Internship">
+    $endDateDisplay = !empty($internship["end_date"])
+        ? date("M Y", strtotime($internship["end_date"]))
+        : "-";
 
-                                    <i class="fa-solid fa-trash"></i>
 
-                                </button>
+    // Technologies → skill tags
+    $technologies = [];
 
+    if (!empty($internship["technologies"])) {
 
-                            </div>
+        $technologies = array_filter(
+            array_map(
+                "trim",
+                explode(",", $internship["technologies"])
+            )
+        );
 
+    }
 
-                        </div>
+?>
 
+<div class="internship-card"
+     data-status="<?= htmlspecialchars($statusClass) ?>"
+     data-title="<?= htmlspecialchars($internship["internship_title"]) ?>">
 
+    <div class="internship-card-content">
 
-                        <!-- Internship Details -->
+        <div class="internship-card-header">
 
-                        <div class="internship-card-content">
+            <span class="internship-type">
+                <?= htmlspecialchars($internship["internship_type"]) ?>
+            </span>
 
+            <i class="fa-solid fa-briefcase"></i>
 
-                            <span class="internship-type">
+        </div>
 
-                                Technical Internship
 
-                            </span>
+        <h3>
+            <?= htmlspecialchars($internship["internship_title"]) ?>
+        </h3>
 
 
-                            <h3>
+        <div class="company-name">
 
-                                Web Development Intern
+            <i class="fa-solid fa-building"></i>
 
-                            </h3>
+            <?= htmlspecialchars($internship["company_name"]) ?>
 
+        </div>
 
-                            <p class="company-name">
 
-                                <i class="fa-solid fa-building"></i>
+        <?php if (!empty($internship["role"])): ?>
 
-                                ABC Technologies
+            <div class="internship-role">
 
-                            </p>
+                <i class="fa-solid fa-user-tie"></i>
 
+                <?= htmlspecialchars($internship["role"]) ?>
 
-                            <p class="internship-role">
+            </div>
 
-                                <i class="fa-solid fa-user-tie"></i>
+        <?php endif; ?>
 
-                                Web Development Intern
 
-                            </p>
+        <div class="internship-meta">
 
+            <span>
 
+                <i class="fa-regular fa-calendar"></i>
 
-                            <!-- Dates -->
+                <?= htmlspecialchars($startDateDisplay) ?>
+                -
+                <?= htmlspecialchars($endDateDisplay) ?>
 
-                            <div class="internship-meta">
+            </span>
 
 
-                                <span>
+            <?php if (!empty($internship["duration"])): ?>
 
-                                    <i class="fa-regular fa-calendar"></i>
+                <span>
 
-                                    Jan 2026 - Mar 2026
+                    <i class="fa-regular fa-clock"></i>
 
-                                </span>
+                    <?= htmlspecialchars($internship["duration"]) ?>
 
+                </span>
 
-                                <span>
+            <?php endif; ?>
 
-                                    <i class="fa-regular fa-clock"></i>
+        </div>
 
-                                    3 Months
 
-                                </span>
+        <div class="internship-location">
 
+            <i class="fa-solid fa-location-dot"></i>
 
-                            </div>
+            <span>
+                <?= !empty($internship["location"])
+                    ? htmlspecialchars($internship["location"])
+                    : "Location not specified"
+                ?>
+            </span>
 
 
+            <?php if (!empty($internship["work_mode"])): ?>
 
-                            <!-- Location -->
+                <span class="mode-badge <?= strtolower(htmlspecialchars($internship["work_mode"])) ?>">
 
-                            <div class="internship-location">
+                    <?= htmlspecialchars($internship["work_mode"]) ?>
 
-                                <i class="fa-solid fa-location-dot"></i>
+                </span>
 
-                                Kochi, Kerala
+            <?php endif; ?>
 
-                                <span class="mode-badge">
+        </div>
 
-                                    On-site
 
-                                </span>
+        <?php if (!empty($technologies)): ?>
 
-                            </div>
+            <div class="internship-skills">
 
+                <?php foreach ($technologies as $technology): ?>
 
+                    <span>
+                        <?= htmlspecialchars($technology) ?>
+                    </span>
 
-                            <!-- Skills -->
+                <?php endforeach; ?>
 
-                            <div class="internship-skills">
+            </div>
 
+        <?php endif; ?>
 
-                                <span>HTML</span>
+    </div>
 
-                                <span>CSS</span>
 
-                                <span>JavaScript</span>
+    <div class="internship-card-bottom">
 
-                                <span>PHP</span>
+    <span class="status-badge <?= htmlspecialchars($statusClass) ?>">
+        <i class="fa-solid fa-circle"></i>
+        <?= htmlspecialchars(ucfirst($status)) ?>
+    </span>
 
+    <div class="internship-card-actions">
 
-                            </div>
+        <button
+    type="button"
+    class="edit-internship"
+    data-internship-id="<?= (int)$internship["internship_id"] ?>"
+    data-title="<?= htmlspecialchars($internship["internship_title"], ENT_QUOTES, 'UTF-8') ?>"
+    data-type="<?= htmlspecialchars($internship["internship_type"], ENT_QUOTES, 'UTF-8') ?>"
+    data-company="<?= htmlspecialchars($internship["company_name"], ENT_QUOTES, 'UTF-8') ?>"
+    data-department="<?= htmlspecialchars($internship["department"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-role="<?= htmlspecialchars($internship["role"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-supervisor="<?= htmlspecialchars($internship["supervisor"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-start-date="<?= htmlspecialchars($internship["start_date"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-end-date="<?= htmlspecialchars($internship["end_date"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-duration="<?= htmlspecialchars($internship["duration"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-status="<?= htmlspecialchars($internship["status"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-work-mode="<?= htmlspecialchars($internship["work_mode"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-location="<?= htmlspecialchars($internship["location"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-company-website="<?= htmlspecialchars($internship["company_website"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-description="<?= htmlspecialchars($internship["description"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-responsibilities="<?= htmlspecialchars($internship["responsibilities"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-technologies="<?= htmlspecialchars($internship["technologies"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-skills-gained="<?= htmlspecialchars($internship["skills_gained"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-certificate="<?= htmlspecialchars($internship["certificate_file"] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+    data-supporting-document="<?= htmlspecialchars($internship["supporting_document"] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+    <i class="fa-solid fa-pen"></i>
+    Edit
+</button>
 
+        <button
+            type="button"
+            class="view-internship"
+            data-internship-id="<?= (int)$internship["internship_id"] ?>">
+            View Details
+            <i class="fa-solid fa-arrow-right"></i>
+        </button>
 
+        <button
+    type="button"
+    class="delete-internship"
+    data-internship-id="<?= (int)$internship["internship_id"] ?>">
+    <i class="fa-solid fa-trash"></i>
+    Delete
+</button>
 
-                        </div>
+    </div>
 
+</div>
 
+</div>
 
-                        <!-- Card Bottom -->
-
-                        <div class="internship-card-bottom">
-
-
-                            <span class="status-badge completed">
-
-                                <i class="fa-solid fa-circle-check"></i>
-
-                                Completed
-
-                            </span>
-
-
-                            <button type="button"
-                                    class="view-internship">
-
-                                View Details
-
-                                <i class="fa-solid fa-arrow-right"></i>
-
-                            </button>
-
-
-                        </div>
-
-
-                    </article>
-
-
-
-                    <!--==============================================
-                              INTERNSHIP CARD 2
-                    ===============================================-->
-
-                    <article class="internship-card"
-                             data-status="completed"
-                             data-type="data-science">
-
-
-                        <div class="internship-card-top">
-
-
-                            <div class="company-logo purple">
-
-                                <i class="fa-solid fa-chart-line"></i>
-
-                            </div>
-
-
-                            <div class="card-actions">
-
-
-                                <button type="button"
-                                        class="card-action edit-internship"
-                                        title="Edit Internship">
-
-                                    <i class="fa-solid fa-pen"></i>
-
-                                </button>
-
-
-                                <button type="button"
-                                        class="card-action delete-internship"
-                                        title="Delete Internship">
-
-                                    <i class="fa-solid fa-trash"></i>
-
-                                </button>
-
-
-                            </div>
-
-
-                        </div>
-
-
-
-                        <div class="internship-card-content">
-
-
-                            <span class="internship-type">
-
-                                Data Science
-
-                            </span>
-
-
-                            <h3>
-
-                                Data Science Intern
-
-                            </h3>
-
-
-                            <p class="company-name">
-
-                                <i class="fa-solid fa-building"></i>
-
-                                DataTech Solutions
-
-                            </p>
-
-
-                            <p class="internship-role">
-
-                                <i class="fa-solid fa-user-tie"></i>
-
-                                Data Science Intern
-
-                            </p>
-
-
-
-                            <div class="internship-meta">
-
-
-                                <span>
-
-                                    <i class="fa-regular fa-calendar"></i>
-
-                                    Apr 2026 - Jun 2026
-
-                                </span>
-
-
-                                <span>
-
-                                    <i class="fa-regular fa-clock"></i>
-
-                                    3 Months
-
-                                </span>
-
-
-                            </div>
-
-
-
-                            <div class="internship-location">
-
-                                <i class="fa-solid fa-location-dot"></i>
-
-                                Bengaluru, Karnataka
-
-                                <span class="mode-badge remote">
-
-                                    Remote
-
-                                </span>
-
-                            </div>
-
-
-
-                            <div class="internship-skills">
-
-                                <span>Python</span>
-
-                                <span>Pandas</span>
-
-                                <span>SQL</span>
-
-                                <span>Machine Learning</span>
-
-                            </div>
-
-
-                        </div>
-
-
-
-                        <div class="internship-card-bottom">
-
-
-                            <span class="status-badge completed">
-
-                                <i class="fa-solid fa-circle-check"></i>
-
-                                Completed
-
-                            </span>
-
-
-                            <button type="button"
-                                    class="view-internship">
-
-                                View Details
-
-                                <i class="fa-solid fa-arrow-right"></i>
-
-                            </button>
-
-
-                        </div>
-
-
-                    </article>
-
-
-
-                    <!--==============================================
-                              INTERNSHIP CARD 3
-                    ===============================================-->
-
-                    <article class="internship-card"
-                             data-status="ongoing"
-                             data-type="ai-ml">
-
-
-                        <div class="internship-card-top">
-
-
-                            <div class="company-logo cyan">
-
-                                <i class="fa-solid fa-brain"></i>
-
-                            </div>
-
-
-                            <div class="card-actions">
-
-
-                                <button type="button"
-                                        class="card-action edit-internship"
-                                        title="Edit Internship">
-
-                                    <i class="fa-solid fa-pen"></i>
-
-                                </button>
-
-
-                                <button type="button"
-                                        class="card-action delete-internship"
-                                        title="Delete Internship">
-
-                                    <i class="fa-solid fa-trash"></i>
-
-                                </button>
-
-
-                            </div>
-
-
-                        </div>
-
-
-
-                        <div class="internship-card-content">
-
-
-                            <span class="internship-type">
-
-                                AI / Machine Learning
-
-                            </span>
-
-
-                            <h3>
-
-                                Machine Learning Intern
-
-                            </h3>
-
-
-                            <p class="company-name">
-
-                                <i class="fa-solid fa-building"></i>
-
-                                AI Innovations Lab
-
-                            </p>
-
-
-                            <p class="internship-role">
-
-                                <i class="fa-solid fa-user-tie"></i>
-
-                                Machine Learning Intern
-
-                            </p>
-
-
-
-                            <div class="internship-meta">
-
-
-                                <span>
-
-                                    <i class="fa-regular fa-calendar"></i>
-
-                                    Jul 2026 - Sep 2026
-
-                                </span>
-
-
-                                <span>
-
-                                    <i class="fa-regular fa-clock"></i>
-
-                                    3 Months
-
-                                </span>
-
-
-                            </div>
-
-
-
-                            <div class="internship-location">
-
-                                <i class="fa-solid fa-location-dot"></i>
-
-                                Remote
-
-                                <span class="mode-badge remote">
-
-                                    Remote
-
-                                </span>
-
-                            </div>
-
-
-
-                            <div class="internship-skills">
-
-                                <span>Python</span>
-
-                                <span>Scikit-learn</span>
-
-                                <span>ML</span>
-
-                                <span>Data Analysis</span>
-
-                            </div>
-
-
-                        </div>
-
-
-
-                        <div class="internship-card-bottom">
-
-
-                            <span class="status-badge ongoing">
-
-                                <i class="fa-solid fa-spinner"></i>
-
-                                Ongoing
-
-                            </span>
-
-
-                            <button type="button"
-                                    class="view-internship">
-
-                                View Details
-
-                                <i class="fa-solid fa-arrow-right"></i>
-
-                            </button>
-
-
-                        </div>
-
-
-                    </article>
-
-
-
-                    <!--==============================================
-                              INTERNSHIP CARD 4
-                    ===============================================-->
-
-                    <article class="internship-card"
-                             data-status="completed"
-                             data-type="research">
-
-
-                        <div class="internship-card-top">
-
-
-                            <div class="company-logo orange">
-
-                                <i class="fa-solid fa-flask"></i>
-
-                            </div>
-
-
-                            <div class="card-actions">
-
-
-                                <button type="button"
-                                        class="card-action edit-internship"
-                                        title="Edit Internship">
-
-                                    <i class="fa-solid fa-pen"></i>
-
-                                </button>
-
-
-                                <button type="button"
-                                        class="card-action delete-internship"
-                                        title="Delete Internship">
-
-                                    <i class="fa-solid fa-trash"></i>
-
-                                </button>
-
-
-                            </div>
-
-
-                        </div>
-
-
-
-                        <div class="internship-card-content">
-
-
-                            <span class="internship-type">
-
-                                Research Internship
-
-                            </span>
-
-
-                            <h3>
-
-                                AI Research Intern
-
-                            </h3>
-
-
-                            <p class="company-name">
-
-                                <i class="fa-solid fa-building"></i>
-
-                                Research Institute
-
-                            </p>
-
-
-                            <p class="internship-role">
-
-                                <i class="fa-solid fa-user-tie"></i>
-
-                                Research Intern
-
-                            </p>
-
-
-
-                            <div class="internship-meta">
-
-
-                                <span>
-
-                                    <i class="fa-regular fa-calendar"></i>
-
-                                    May 2025 - Jul 2025
-
-                                </span>
-
-
-                                <span>
-
-                                    <i class="fa-regular fa-clock"></i>
-
-                                    8 Weeks
-
-                                </span>
-
-
-                            </div>
-
-
-
-                            <div class="internship-location">
-
-                                <i class="fa-solid fa-location-dot"></i>
-
-                                Thiruvananthapuram, Kerala
-
-                                <span class="mode-badge hybrid">
-
-                                    Hybrid
-
-                                </span>
-
-                            </div>
-
-
-
-                            <div class="internship-skills">
-
-                                <span>Python</span>
-
-                                <span>AI</span>
-
-                                <span>Research</span>
-
-                                <span>Deep Learning</span>
-
-                            </div>
-
-
-                        </div>
-
-
-
-                        <div class="internship-card-bottom">
-
-
-                            <span class="status-badge completed">
-
-                                <i class="fa-solid fa-circle-check"></i>
-
-                                Completed
-
-                            </span>
-
-
-                            <button type="button"
-                                    class="view-internship">
-
-                                View Details
-
-                                <i class="fa-solid fa-arrow-right"></i>
-
-                            </button>
-
-
-                        </div>
-
-
-                    </article>
-
-
+<?php endforeach; ?>
+                    
 
                 </div>
 
