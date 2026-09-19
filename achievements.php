@@ -2,11 +2,17 @@
 
 session_start();
 
+require_once "db.php";
+
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 header("Expires: 0");
 
+
+/*==================================================
+              LOGIN PROTECTION
+==================================================*/
 
 if (!isset($_SESSION["user_id"])) {
 
@@ -16,8 +22,1064 @@ if (!isset($_SESSION["user_id"])) {
 
 }
 
+
+$user_id = $_SESSION["user_id"];
+
+
+/*==================================================
+              USER INFORMATION
+==================================================*/
+
+$user_query = "
+    SELECT
+        u.full_name,
+        u.account_type,
+        p.profile_photo
+    FROM users u
+    LEFT JOIN profile p
+        ON u.user_id = p.user_id
+    WHERE u.user_id = ?
+";
+
+$user_stmt = mysqli_prepare($conn, $user_query);
+
+mysqli_stmt_bind_param(
+    $user_stmt,
+    "i",
+    $user_id
+);
+
+mysqli_stmt_execute($user_stmt);
+
+$user_result = mysqli_stmt_get_result($user_stmt);
+
+$user_data = mysqli_fetch_assoc($user_result);
+
+$user_name = $user_data["full_name"] ?? "User";
+
+$user_role = $user_data["account_type"] ?? "Student";
+
+$profile_photo = $user_data["profile_photo"] ?? "";
+
+mysqli_stmt_close($user_stmt);
+
+
+/*==================================================
+              NOTIFICATION COUNT
+==================================================*/
+
+$notification_query = "
+    SELECT COUNT(*) AS notification_count
+    FROM notifications
+    WHERE user_id = ?
+    AND is_read = 0
+";
+
+$notification_stmt = mysqli_prepare(
+    $conn,
+    $notification_query
+);
+
+mysqli_stmt_bind_param(
+    $notification_stmt,
+    "i",
+    $user_id
+);
+
+mysqli_stmt_execute($notification_stmt);
+
+$notification_result = mysqli_stmt_get_result(
+    $notification_stmt
+);
+
+$notification_data = mysqli_fetch_assoc(
+    $notification_result
+);
+
+$notification_count =
+    (int) ($notification_data["notification_count"] ?? 0);
+
+mysqli_stmt_close($notification_stmt);
+
+
+/*==================================================
+              ACHIEVEMENT FILE DIRECTORY
+==================================================*/
+
+$achievement_upload_dir =
+    __DIR__ . "/uploads/achievements/";
+
+$achievement_upload_url =
+    "uploads/achievements/";
+
+
+if (!is_dir($achievement_upload_dir)) {
+
+    mkdir(
+        $achievement_upload_dir,
+        0777,
+        true
+    );
+
+}
+
+
+/*==================================================
+              SUCCESS / ERROR MESSAGE
+==================================================*/
+
+$success_message =
+    $_SESSION["achievement_success"] ?? "";
+
+$error_message =
+    $_SESSION["achievement_error"] ?? "";
+
+unset($_SESSION["achievement_success"]);
+unset($_SESSION["achievement_error"]);
+
+
+/*==================================================
+              ADD / UPDATE / DELETE
+==================================================*/
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+
+
+    $action = $_POST["action"] ?? "";
+
+
+    /*==================================================
+                    ADD ACHIEVEMENT
+    ==================================================*/
+
+    if ($action === "add") {
+
+
+        $achievement_title =
+            trim($_POST["achievement_title"] ?? "");
+
+        $achievement_type =
+            trim($_POST["achievement_type"] ?? "");
+
+        $position =
+            trim($_POST["position"] ?? "");
+
+        $achievement_category =
+            trim($_POST["achievement_category"] ?? "");
+
+        $organization =
+            trim($_POST["organization"] ?? "");
+
+        $achievement_date =
+            $_POST["achievement_date"] ?? "";
+
+        $achievement_description =
+            trim($_POST["achievement_description"] ?? "");
+
+        $achievement_skills =
+            trim($_POST["achievement_skills"] ?? "");
+
+        $visibility =
+            $_POST["visibility"] ?? "public";
+        
+        $certificate_file =
+    $achievement["certificate_file"] ?? "";
+
+
+        if (
+            $achievement_title === "" ||
+            $achievement_type === "" ||
+            $organization === "" ||
+            $achievement_date === "" ||
+            $achievement_description === ""
+        ) {
+
+            $error_message =
+                "Please fill in all required fields.";
+
+        } else {
+
+
+            $certificate_file = null;
+
+
+            /*==========================================
+                     FILE UPLOAD
+            ==========================================*/
+
+            if (
+                isset($_FILES["achievement_proof"]) &&
+                $_FILES["achievement_proof"]["error"]
+                    !== UPLOAD_ERR_NO_FILE
+            ) {
+
+
+                $file = $_FILES["achievement_proof"];
+
+
+                if ($file["error"] !== UPLOAD_ERR_OK) {
+
+                    $error_message =
+                        "There was a problem uploading the file.";
+
+                } elseif ($file["size"] > 5 * 1024 * 1024) {
+
+                    $error_message =
+                        "File size must not exceed 5 MB.";
+
+                } else {
+
+
+                    $allowed_extensions = [
+                        "jpg",
+                        "jpeg",
+                        "png",
+                        "pdf"
+                    ];
+
+
+                    $extension =
+                        strtolower(
+                            pathinfo(
+                                $file["name"],
+                                PATHINFO_EXTENSION
+                            )
+                        );
+
+
+                    if (
+                        !in_array(
+                            $extension,
+                            $allowed_extensions,
+                            true
+                        )
+                    ) {
+
+                        $error_message =
+                            "Only JPG, JPEG, PNG and PDF files are allowed.";
+
+                    } else {
+
+
+                        $new_file_name =
+                            "achievement_" .
+                            $user_id .
+                            "_" .
+                            time() .
+                            "_" .
+                            bin2hex(random_bytes(4)) .
+                            "." .
+                            $extension;
+
+
+                        $destination =
+                            $achievement_upload_dir .
+                            $new_file_name;
+
+
+                        if (
+                            move_uploaded_file(
+                                $file["tmp_name"],
+                                $destination
+                            )
+                        ) {
+
+                            $certificate_file =
+                                $achievement_upload_url .
+                                $new_file_name;
+
+                        } else {
+
+                            $error_message =
+                                "Unable to save the uploaded file.";
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+
+            /*==========================================
+                     INSERT ACHIEVEMENT
+            ==========================================*/
+
+            if ($error_message === "") {
+
+
+                $insert_query = "
+                    INSERT INTO achievements
+                    (
+                        user_id,
+                        achievement_title,
+                        achievement_type,
+                        position,
+                        achievement_category,
+                        organization,
+                        achievement_date,
+                        achievement_description,
+                        achievement_skills,
+                        visibility,
+                        certificate_file
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ";
+
+
+                $insert_stmt =
+                    mysqli_prepare(
+                        $conn,
+                        $insert_query
+                    );
+
+
+                mysqli_stmt_bind_param(
+                    $insert_stmt,
+                    "issssssssss",
+                    $user_id,
+                    $achievement_title,
+                    $achievement_type,
+                    $position,
+                    $achievement_category,
+                    $organization,
+                    $achievement_date,
+                    $achievement_description,
+                    $achievement_skills,
+                    $visibility,
+                    $certificate_file
+                );
+
+
+                if (mysqli_stmt_execute($insert_stmt)) {
+
+
+                    /*==================================
+                           NOTIFICATION
+                    ==================================*/
+
+                    $notification_message =
+                        "New achievement added: " .
+                        $achievement_title;
+
+
+                    $notification_insert =
+                        "INSERT INTO notifications
+                         (user_id, message)
+                         VALUES (?, ?)";
+
+
+                    $notification_stmt =
+                        mysqli_prepare(
+                            $conn,
+                            $notification_insert
+                        );
+
+
+                    mysqli_stmt_bind_param(
+                        $notification_stmt,
+                        "is",
+                        $user_id,
+                        $notification_message
+                    );
+
+
+                    mysqli_stmt_execute(
+                        $notification_stmt
+                    );
+
+                    mysqli_stmt_close(
+                        $notification_stmt
+                    );
+
+
+                    $success_message =
+                        "Achievement added successfully.";
+
+                } else {
+
+                    $error_message =
+                        "Unable to save the achievement.";
+
+                }
+
+
+                mysqli_stmt_close(
+                    $insert_stmt
+                );
+
+            }
+
+        }
+
+    }
+
+
+    /*==================================================
+                    UPDATE ACHIEVEMENT
+    ==================================================*/
+
+    elseif ($action === "update") {
+
+
+        $achievement_id =
+            (int) ($_POST["achievement_id"] ?? 0);
+
+        $achievement_title =
+            trim($_POST["achievement_title"] ?? "");
+
+        $achievement_type =
+            trim($_POST["achievement_type"] ?? "");
+
+        $position =
+            trim($_POST["position"] ?? "");
+
+        $achievement_category =
+            trim($_POST["achievement_category"] ?? "");
+
+        $organization =
+            trim($_POST["organization"] ?? "");
+
+        $achievement_date =
+            $_POST["achievement_date"] ?? "";
+
+        $achievement_description =
+            trim($_POST["achievement_description"] ?? "");
+
+        $achievement_skills =
+            trim($_POST["achievement_skills"] ?? "");
+
+        $visibility =
+            $_POST["visibility"] ?? "public";
+
+
+        if (
+            $achievement_id <= 0 ||
+            $achievement_title === "" ||
+            $achievement_type === "" ||
+            $organization === "" ||
+            $achievement_date === "" ||
+            $achievement_description === ""
+        ) {
+
+            $error_message =
+                "Please fill in all required fields.";
+
+        } else {
+
+
+            /*==========================================
+                GET EXISTING FILE
+            ==========================================*/
+
+            $old_file = null;
+
+
+            $old_file_query = "
+                SELECT certificate_file
+                FROM achievements
+                WHERE achievement_id = ?
+                AND user_id = ?
+            ";
+
+
+            $old_file_stmt =
+                mysqli_prepare(
+                    $conn,
+                    $old_file_query
+                );
+
+
+            mysqli_stmt_bind_param(
+                $old_file_stmt,
+                "ii",
+                $achievement_id,
+                $user_id
+            );
+
+
+            mysqli_stmt_execute(
+                $old_file_stmt
+            );
+
+
+            $old_file_result =
+                mysqli_stmt_get_result(
+                    $old_file_stmt
+                );
+
+
+            $old_file_data =
+                mysqli_fetch_assoc(
+                    $old_file_result
+                );
+
+
+            if ($old_file_data) {
+
+                $old_file =
+                    $old_file_data["certificate_file"];
+
+            }
+
+
+            mysqli_stmt_close(
+                $old_file_stmt
+            );
+
+
+            $certificate_file =
+                $old_file;
+
+
+            /*==========================================
+                     NEW FILE UPLOAD
+            ==========================================*/
+
+            if (
+                isset($_FILES["achievement_proof"]) &&
+                $_FILES["achievement_proof"]["error"]
+                    !== UPLOAD_ERR_NO_FILE
+            ) {
+
+
+                $file = $_FILES["achievement_proof"];
+
+
+                if ($file["error"] !== UPLOAD_ERR_OK) {
+
+                    $error_message =
+                        "There was a problem uploading the file.";
+
+                } elseif ($file["size"] > 5 * 1024 * 1024) {
+
+                    $error_message =
+                        "File size must not exceed 5 MB.";
+
+                } else {
+
+
+                    $allowed_extensions = [
+                        "jpg",
+                        "jpeg",
+                        "png",
+                        "pdf"
+                    ];
+
+
+                    $extension =
+                        strtolower(
+                            pathinfo(
+                                $file["name"],
+                                PATHINFO_EXTENSION
+                            )
+                        );
+
+
+                    if (
+                        !in_array(
+                            $extension,
+                            $allowed_extensions,
+                            true
+                        )
+                    ) {
+
+                        $error_message =
+                            "Only JPG, JPEG, PNG and PDF files are allowed.";
+
+                    } else {
+
+
+                        $new_file_name =
+                            "achievement_" .
+                            $user_id .
+                            "_" .
+                            time() .
+                            "_" .
+                            bin2hex(random_bytes(4)) .
+                            "." .
+                            $extension;
+
+
+                        $destination =
+                            $achievement_upload_dir .
+                            $new_file_name;
+
+
+                        if (
+                            move_uploaded_file(
+                                $file["tmp_name"],
+                                $destination
+                            )
+                        ) {
+
+
+                            $certificate_file =
+                                $achievement_upload_url .
+                                $new_file_name;
+
+
+                            /*==========================
+                              DELETE OLD FILE
+                            ==========================*/
+
+                            if (
+                                $old_file &&
+                                strpos(
+                                    $old_file,
+                                    $achievement_upload_url
+                                ) === 0
+                            ) {
+
+                                $old_file_path =
+                                    __DIR__ .
+                                    "/" .
+                                    $old_file;
+
+
+                                if (
+                                    file_exists(
+                                        $old_file_path
+                                    )
+                                ) {
+
+                                    unlink(
+                                        $old_file_path
+                                    );
+
+                                }
+
+                            }
+
+                        } else {
+
+                            $error_message =
+                                "Unable to save the uploaded file.";
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+
+            /*==========================================
+                     UPDATE DATABASE
+            ==========================================*/
+
+            if ($error_message === "") {
+
+
+                $update_query = "
+                    UPDATE achievements
+                    SET
+                        achievement_title = ?,
+                        achievement_type = ?,
+                        position = ?,
+                        achievement_category = ?,
+                        organization = ?,
+                        achievement_date = ?,
+                        achievement_description = ?,
+                        achievement_skills = ?,
+                        visibility = ?,
+                        certificate_file = ?
+                    WHERE achievement_id = ?
+                    AND user_id = ?
+                ";
+
+
+                $update_stmt =
+                    mysqli_prepare(
+                        $conn,
+                        $update_query
+                    );
+
+
+                mysqli_stmt_bind_param(
+                    $update_stmt,
+                    "ssssssssssii",
+                    $achievement_title,
+                    $achievement_type,
+                    $position,
+                    $achievement_category,
+                    $organization,
+                    $achievement_date,
+                    $achievement_description,
+                    $achievement_skills,
+                    $visibility,
+                    $certificate_file,
+                    $achievement_id,
+                    $user_id
+                );
+
+
+                if (
+                    mysqli_stmt_execute(
+                        $update_stmt
+                    )
+                ) {
+
+                    $success_message =
+                        "Achievement updated successfully.";
+
+                } else {
+
+                    $error_message =
+                        "Unable to update the achievement.";
+
+                }
+
+
+                mysqli_stmt_close(
+                    $update_stmt
+                );
+
+            }
+
+        }
+
+    }
+
+
+    /*==================================================
+                    DELETE ACHIEVEMENT
+    ==================================================*/
+
+    elseif ($action === "delete") {
+
+
+        $achievement_id =
+            (int) ($_POST["achievement_id"] ?? 0);
+
+
+        if ($achievement_id <= 0) {
+
+            $error_message =
+                "Invalid achievement.";
+
+        } else {
+
+
+            /*==========================================
+                     GET FILE BEFORE DELETE
+            ==========================================*/
+
+            $file_query = "
+                SELECT certificate_file
+                FROM achievements
+                WHERE achievement_id = ?
+                AND user_id = ?
+            ";
+
+
+            $file_stmt =
+                mysqli_prepare(
+                    $conn,
+                    $file_query
+                );
+
+
+            mysqli_stmt_bind_param(
+                $file_stmt,
+                "ii",
+                $achievement_id,
+                $user_id
+            );
+
+
+            mysqli_stmt_execute(
+                $file_stmt
+            );
+
+
+            $file_result =
+                mysqli_stmt_get_result(
+                    $file_stmt
+                );
+
+
+            $file_data =
+                mysqli_fetch_assoc(
+                    $file_result
+                );
+
+
+            mysqli_stmt_close(
+                $file_stmt
+            );
+
+
+            /*==========================================
+                     DELETE DATABASE RECORD
+            ==========================================*/
+
+            $delete_query = "
+                DELETE FROM achievements
+                WHERE achievement_id = ?
+                AND user_id = ?
+            ";
+
+
+            $delete_stmt =
+                mysqli_prepare(
+                    $conn,
+                    $delete_query
+                );
+
+
+            mysqli_stmt_bind_param(
+                $delete_stmt,
+                "ii",
+                $achievement_id,
+                $user_id
+            );
+
+
+            if (
+                mysqli_stmt_execute(
+                    $delete_stmt
+                )
+            ) {
+
+
+                /*======================================
+                         DELETE UPLOADED FILE
+                ======================================*/
+
+                if (
+                    !empty(
+                        $file_data["certificate_file"]
+                    )
+                ) {
+
+
+                    $file_path =
+                        __DIR__ .
+                        "/" .
+                        $file_data["certificate_file"];
+
+
+                    if (file_exists($file_path)) {
+
+                        unlink($file_path);
+
+                    }
+
+                }
+
+
+                $success_message =
+                    "Achievement deleted successfully.";
+
+            } else {
+
+                $error_message =
+                    "Unable to delete the achievement.";
+
+            }
+
+
+            mysqli_stmt_close(
+                $delete_stmt
+            );
+
+        }
+
+    }
+
+}
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+
+    if ($success_message !== "") {
+        $_SESSION["achievement_success"] = $success_message;
+    }
+
+    if ($error_message !== "") {
+        $_SESSION["achievement_error"] = $error_message;
+    }
+
+    header("Location: achievements.php");
+    exit;
+}
+
+
+/*==================================================
+              SUMMARY COUNTS
+==================================================*/
+
+$count_query = "
+    SELECT
+        COUNT(*) AS total_achievements,
+        SUM(
+            achievement_type = 'award'
+        ) AS total_awards,
+        SUM(
+            achievement_type = 'competition'
+        ) AS total_competitions,
+        SUM(
+            achievement_type = 'recognition'
+        ) AS total_recognitions
+    FROM achievements
+    WHERE user_id = ?
+";
+
+
+$count_stmt =
+    mysqli_prepare(
+        $conn,
+        $count_query
+    );
+
+
+mysqli_stmt_bind_param(
+    $count_stmt,
+    "i",
+    $user_id
+);
+
+
+mysqli_stmt_execute(
+    $count_stmt
+);
+
+
+$count_result =
+    mysqli_stmt_get_result(
+        $count_stmt
+    );
+
+
+$count_data =
+    mysqli_fetch_assoc(
+        $count_result
+    );
+
+
+$total_achievements =
+    (int) ($count_data["total_achievements"] ?? 0);
+
+$total_awards =
+    (int) ($count_data["total_awards"] ?? 0);
+
+$total_competitions =
+    (int) ($count_data["total_competitions"] ?? 0);
+
+$total_recognitions =
+    (int) ($count_data["total_recognitions"] ?? 0);
+
+
+mysqli_stmt_close(
+    $count_stmt
+);
+
+
+/*==================================================
+              LOAD NOTIFICATIONS
+==================================================*/
+
+$notifications_query = "
+    SELECT
+        message,
+        created_at
+    FROM notifications
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+    LIMIT 10
+";
+
+$notifications_stmt =
+    mysqli_prepare(
+        $conn,
+        $notifications_query
+    );
+
+mysqli_stmt_bind_param(
+    $notifications_stmt,
+    "i",
+    $user_id
+);
+
+mysqli_stmt_execute(
+    $notifications_stmt
+);
+
+$notifications_result =
+    mysqli_stmt_get_result(
+        $notifications_stmt
+    );
+
+$notifications = [];
+
+while (
+    $notification =
+        mysqli_fetch_assoc(
+            $notifications_result
+        )
+) {
+
+    $notifications[] = $notification;
+
+}
+
+mysqli_stmt_close(
+    $notifications_stmt
+);
+
+
+/*==================================================
+              LOAD ACHIEVEMENTS
+==================================================*/
+
+$achievements_query = "
+    SELECT
+        achievement_id,
+        achievement_title,
+        achievement_type,
+        position,
+        achievement_category,
+        organization,
+        achievement_date,
+        achievement_description,
+        achievement_skills,
+        visibility,
+        certificate_file
+    FROM achievements
+    WHERE user_id = ?
+    ORDER BY achievement_date DESC, achievement_id DESC
+";
+
+
+$achievements_stmt =
+    mysqli_prepare(
+        $conn,
+        $achievements_query
+    );
+
+
+mysqli_stmt_bind_param(
+    $achievements_stmt,
+    "i",
+    $user_id
+);
+
+
+mysqli_stmt_execute(
+    $achievements_stmt
+);
+
+
+$achievements_result =
+    mysqli_stmt_get_result(
+        $achievements_stmt
+    );
+
 ?>
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -67,6 +1129,22 @@ if (!isset($_SESSION["user_id"])) {
 
 
 <body>
+
+
+
+<?php if (!empty($success_message)): ?>
+    <div class="success-message">
+        <?php echo htmlspecialchars($success_message); ?>
+    </div>
+<?php endif; ?>
+
+<?php if (!empty($error_message)): ?>
+    <div class="error-message">
+        <?php echo htmlspecialchars($error_message); ?>
+    </div>
+<?php endif; ?>
+
+
 
 
 <!--==================================================
@@ -379,46 +1457,84 @@ if (!isset($_SESSION["user_id"])) {
 
                 <!-- Notification -->
 
-                <button type="button"
-                        class="notification"
-                        aria-label="Notifications">
+<button type="button" 
+        class="notification" 
+        aria-label="Notifications"> 
 
-                    <i class="fa-regular fa-bell"></i>
+    <i class="fa-regular fa-bell"></i> 
 
-                    <span>3</span>
+    <span>
+        <?php echo $notification_count; ?>
+    </span> 
 
-                </button>
+</button> 
+<div class="notification-popup">
+
+    <div class="notification-popup-header">
+        <h3>Notifications</h3>
+    </div>
+
+    <div class="notification-list">
+
+    <?php if (!empty($notifications)): ?>
+
+        <?php foreach ($notifications as $notification): ?>
+
+            <div class="notification-item">
+
+                <?php echo htmlspecialchars(
+                    $notification["message"]
+                ); ?>
+
+            </div>
+
+        <?php endforeach; ?>
+
+    <?php else: ?>
+
+        <div class="notification-empty">
+            No new notifications.
+        </div>
+
+    <?php endif; ?>
+
+</div>
+
+</div>
 
 
+<!-- User --> 
 
-                <!-- User -->
-
-                <div class="user-profile">
-
-
-                    <img src="images/profile.jpg"
-                         alt="Profile picture"
-                         onerror="this.style.display='none';">
+<div class="user-profile"> 
 
 
-                    <div>
-
-                        <h4>
-
-                            <?php echo htmlspecialchars($user_name); ?>
-
-                        </h4>
-
-                        <p>
-
-                            <?php echo htmlspecialchars($user_role); ?>
-
-                        </p>
-
-                    </div>
+    <img src="<?php
+        echo !empty($profile_photo)
+            ? htmlspecialchars($profile_photo)
+            : 'images/profile.jpg';
+    ?>"
+         alt="Profile picture"
+         onerror="this.style.display='none';"> 
 
 
-                </div>
+    <div> 
+
+        <h4> 
+
+            <?php echo htmlspecialchars($user_name); ?> 
+
+        </h4> 
+
+        <p> 
+
+            <?php echo htmlspecialchars($user_role); ?> 
+
+        </p> 
+
+    </div> 
+
+
+</div>
 
 
             </div>
@@ -519,7 +1635,7 @@ if (!isset($_SESSION["user_id"])) {
 
                     <h2 id="totalAchievements">
 
-                        0
+                        <?php echo $total_achievements; ?>
 
                     </h2>
 
@@ -553,7 +1669,7 @@ if (!isset($_SESSION["user_id"])) {
 
                     <h2 id="totalAwards">
 
-                        0
+                            <?php echo $total_awards; ?>
 
                     </h2>
 
@@ -587,7 +1703,7 @@ if (!isset($_SESSION["user_id"])) {
 
                     <h2 id="totalCompetitions">
 
-                        0
+                        <?php echo $total_competitions; ?>
 
                     </h2>
 
@@ -621,7 +1737,7 @@ if (!isset($_SESSION["user_id"])) {
 
                     <h2 id="totalRecognitions">
 
-                        0
+                        <?php echo $total_recognitions; ?>
 
                     </h2>
 
@@ -672,11 +1788,11 @@ if (!isset($_SESSION["user_id"])) {
 
                     <div>
 
-                        <h2>
+                        <h2 id="achievementFormTitle">
 
-                            Add New Achievement
+    Add New Achievement
 
-                        </h2>
+</h2>
 
 
                         <p>
@@ -697,10 +1813,19 @@ if (!isset($_SESSION["user_id"])) {
                            FORM
                 ===================================================-->
 
-                <form id="achievementForm"
-                      method="POST"
-                      action=""
-                      enctype="multipart/form-data">
+                <form id="achievementForm" 
+      method="POST" 
+      action="" 
+      enctype="multipart/form-data">
+
+    <input type="hidden"
+           name="action"
+           value="add">
+
+    <input type="hidden"
+           name="achievement_id"
+           id="achievementId"
+           value="">
 
 
 
@@ -1327,7 +2452,8 @@ if (!isset($_SESSION["user_id"])) {
                         <!-- Save -->
 
                         <button type="submit"
-                                class="save-achievement-btn">
+        class="save-achievement-btn"
+        id="achievementSubmitBtn">
 
 
                             <i class="fa-solid fa-floppy-disk"></i>
@@ -1473,743 +2599,371 @@ if (!isset($_SESSION["user_id"])) {
 
 
 
-                <!--==================================================
-                         ACHIEVEMENT CARD 1
-                ===================================================-->
+                <?php
 
-                <article class="achievement-card"
-                         data-type="competition"
-                         data-category="technical"
-                         data-title="Coding Competition">
+while ($achievement = mysqli_fetch_assoc($achievements_result)):
 
+    $achievement_id =
+        (int) $achievement["achievement_id"];
 
-                    <!-- Card Top -->
+    $achievement_title =
+        $achievement["achievement_title"] ?? "";
 
-                    <div class="achievement-card-top">
+    $achievement_type =
+        $achievement["achievement_type"] ?? "";
 
+    $position =
+        $achievement["position"] ?? "";
 
-                        <div class="achievement-badge">
+    $achievement_category =
+        $achievement["achievement_category"] ?? "";
 
+    $organization =
+        $achievement["organization"] ?? "";
 
-                            <div class="badge-icon">
+    $achievement_date =
+        $achievement["achievement_date"] ?? "";
 
-                                <i class="fa-solid fa-medal"></i>
+    $achievement_description =
+        $achievement["achievement_description"] ?? "";
 
-                            </div>
+    $achievement_skills =
+        $achievement["achievement_skills"] ?? "";
 
+    $visibility =
+        $achievement["visibility"] ?? "public";
 
-                            <div>
 
-                                <span class="achievement-label">
+    /*==============================================
+                 DISPLAY LABEL
+    ==============================================*/
 
-                                    COMPETITION
+    $type_labels = [
+        "award" => "AWARD",
+        "competition" => "COMPETITION",
+        "recognition" => "RECOGNITION",
+        "academic" => "ACADEMIC",
+        "leadership" => "LEADERSHIP",
+        "sports" => "SPORTS",
+        "other" => "OTHER"
+    ];
 
-                                </span>
 
+    $type_label =
+        $type_labels[$achievement_type]
+        ?? strtoupper($achievement_type);
 
-                                <span class="achievement-rank">
 
-                                    1st Prize
+    /*==============================================
+                 BADGE ICON
+    ==============================================*/
 
-                                </span>
+    $type_icons = [
+        "award" => "fa-trophy",
+        "competition" => "fa-medal",
+        "recognition" => "fa-award",
+        "academic" => "fa-graduation-cap",
+        "leadership" => "fa-star",
+        "sports" => "fa-futbol",
+        "other" => "fa-trophy"
+    ];
 
-                            </div>
 
+    $type_icon =
+        $type_icons[$achievement_type]
+        ?? "fa-trophy";
 
-                        </div>
 
+    /*==============================================
+                 BADGE COLOR
+    ==============================================*/
 
+    $type_colors = [
+        "award" => "purple",
+        "competition" => "",
+        "recognition" => "cyan",
+        "academic" => "purple",
+        "leadership" => "orange",
+        "sports" => "cyan",
+        "other" => ""
+    ];
 
-                        <!-- Actions -->
 
-                        <div class="card-actions">
+    $badge_color =
+        $type_colors[$achievement_type]
+        ?? "";
 
 
-                            <button type="button"
-                                    class="card-action edit-achievement"
-                                    title="Edit Achievement">
+    /*==============================================
+                 DATE FORMAT
+    ==============================================*/
 
+    $formatted_date = "";
 
-                                <i class="fa-solid fa-pen"></i>
-
-
-                            </button>
-
-
-                            <button type="button"
-                                    class="card-action delete-achievement"
-                                    title="Delete Achievement">
-
-
-                                <i class="fa-solid fa-trash"></i>
-
-
-                            </button>
-
-
-                        </div>
-
-
-                    </div>
-
-
-
-                    <!-- Card Content -->
-
-                    <div class="achievement-card-content">
-
-
-                        <h3>
-
-                            Coding Competition
-
-                        </h3>
-
-
-                        <div class="achievement-organization">
-
-
-                            <i class="fa-solid fa-building"></i>
-
-
-                            <span>
-
-                                ABC College of Technology
-
-                            </span>
-
-
-                        </div>
-
-
-
-                        <div class="achievement-date">
-
-
-                            <i class="fa-regular fa-calendar"></i>
-
-
-                            <span>
-
-                                March 15, 2026
-
-                            </span>
-
-
-                        </div>
-
-
-
-                        <p class="achievement-description">
-
-                            Secured first position in the
-                            inter-college coding competition by
-                            developing an innovative software solution.
-
-                        </p>
-
-
-
-                        <!-- Skills -->
-
-                        <div class="achievement-skills">
-
-
-                            <span>Python</span>
-
-                            <span>Problem Solving</span>
-
-                            <span>Programming</span>
-
-
-                        </div>
-
-
-                    </div>
-
-
-
-                    <!-- Card Bottom -->
-
-                    <div class="achievement-card-bottom">
-
-
-                        <span class="achievement-status">
-
-
-                            <i class="fa-solid fa-circle-check"></i>
-
-                            Verified Achievement
-
-
-                        </span>
-
-
-
-                        <button type="button"
-                                class="view-achievement"
-                                data-title="Coding Competition">
-
-
-                            View Details
-
-                            <i class="fa-solid fa-arrow-right"></i>
-
-
-                        </button>
-
-
-                    </div>
-
-
-                </article>
-
-
-
-                <!--==================================================
-                         ACHIEVEMENT CARD 2
-                ===================================================-->
-
-                <article class="achievement-card"
-                         data-type="award"
-                         data-category="academic"
-                         data-title="Academic Excellence Award">
-
-
-                    <!-- Card Top -->
-
-                    <div class="achievement-card-top">
-
-
-                        <div class="achievement-badge">
-
-
-                            <div class="badge-icon purple">
-
-                                <i class="fa-solid fa-trophy"></i>
-
-                            </div>
-
-
-                            <div>
-
-                                <span class="achievement-label">
-
-                                    AWARD
-
-                                </span>
-
-
-                                <span class="achievement-rank">
-
-                                    Excellence Award
-
-                                </span>
-
-                            </div>
-
-
-                        </div>
-
-
-
-                        <div class="card-actions">
-
-
-                            <button type="button"
-                                    class="card-action edit-achievement"
-                                    title="Edit Achievement">
-
-
-                                <i class="fa-solid fa-pen"></i>
-
-
-                            </button>
-
-
-                            <button type="button"
-                                    class="card-action delete-achievement"
-                                    title="Delete Achievement">
-
-
-                                <i class="fa-solid fa-trash"></i>
-
-
-                            </button>
-
-
-                        </div>
-
-
-                    </div>
-
-
-
-                    <!-- Content -->
-
-                    <div class="achievement-card-content">
-
-
-                        <h3>
-
-                            Academic Excellence Award
-
-                        </h3>
-
-
-                        <div class="achievement-organization">
-
-
-                            <i class="fa-solid fa-building"></i>
-
-
-                            <span>
-
-                                ABC University
-
-                            </span>
-
-
-                        </div>
-
-
-                        <div class="achievement-date">
-
-
-                            <i class="fa-regular fa-calendar"></i>
-
-
-                            <span>
-
-                                January 20, 2026
-
-                            </span>
-
-
-                        </div>
-
-
-                        <p class="achievement-description">
-
-                            Received an academic excellence award
-                            for maintaining outstanding academic
-                            performance.
-
-                        </p>
-
-
-                        <div class="achievement-skills">
-
-
-                            <span>Academic</span>
-
-                            <span>Research</span>
-
-                            <span>Consistency</span>
-
-
-                        </div>
-
-
-                    </div>
-
-
-
-                    <!-- Bottom -->
-
-                    <div class="achievement-card-bottom">
-
-
-                        <span class="achievement-status">
-
-
-                            <i class="fa-solid fa-circle-check"></i>
-
-                            Verified Achievement
-
-
-                        </span>
-
-
-                        <button type="button"
-                                class="view-achievement"
-                                data-title="Academic Excellence Award">
-
-
-                            View Details
-
-                            <i class="fa-solid fa-arrow-right"></i>
-
-
-                        </button>
-
-
-                    </div>
-
-
-                </article>
-
-
-
-                <!--==================================================
-                         ACHIEVEMENT CARD 3
-                ===================================================-->
-
-                <article class="achievement-card"
-                         data-type="recognition"
-                         data-category="professional"
-                         data-title="Best Project Recognition">
-
-
-                    <div class="achievement-card-top">
-
-
-                        <div class="achievement-badge">
-
-
-                            <div class="badge-icon cyan">
-
-                                <i class="fa-solid fa-award"></i>
-
-                            </div>
-
-
-                            <div>
-
-                                <span class="achievement-label">
-
-                                    RECOGNITION
-
-                                </span>
-
-
-                                <span class="achievement-rank">
-
-                                    Best Project
-
-                                </span>
-
-                            </div>
-
-
-                        </div>
-
-
-
-                        <div class="card-actions">
-
-
-                            <button type="button"
-                                    class="card-action edit-achievement"
-                                    title="Edit Achievement">
-
-
-                                <i class="fa-solid fa-pen"></i>
-
-
-                            </button>
-
-
-                            <button type="button"
-                                    class="card-action delete-achievement"
-                                    title="Delete Achievement">
-
-
-                                <i class="fa-solid fa-trash"></i>
-
-
-                            </button>
-
-
-                        </div>
-
-
-                    </div>
-
-
-
-                    <div class="achievement-card-content">
-
-
-                        <h3>
-
-                            Best Project Recognition
-
-                        </h3>
-
-
-                        <div class="achievement-organization">
-
-
-                            <i class="fa-solid fa-building"></i>
-
-
-                            <span>
-
-                                Department of Computer Science
-
-                            </span>
-
-
-                        </div>
-
-
-                        <div class="achievement-date">
-
-
-                            <i class="fa-regular fa-calendar"></i>
-
-
-                            <span>
-
-                                December 10, 2025
-
-                            </span>
-
-
-                        </div>
-
-
-                        <p class="achievement-description">
-
-                            Recognized for developing an innovative
-                            project that demonstrated practical
-                            application of computer science concepts.
-
-                        </p>
-
-
-                        <div class="achievement-skills">
-
-
-                            <span>Web Development</span>
-
-                            <span>PHP</span>
-
-                            <span>MySQL</span>
-
-
-                        </div>
-
-
-                    </div>
-
-
-
-                    <div class="achievement-card-bottom">
-
-
-                        <span class="achievement-status">
-
-
-                            <i class="fa-solid fa-circle-check"></i>
-
-                            Verified Achievement
-
-
-                        </span>
-
-
-                        <button type="button"
-                                class="view-achievement"
-                                data-title="Best Project Recognition">
-
-
-                            View Details
-
-                            <i class="fa-solid fa-arrow-right"></i>
-
-
-                        </button>
-
-
-                    </div>
-
-
-                </article>
-
-
-
-                <!--==================================================
-                         ACHIEVEMENT CARD 4
-                ===================================================-->
-
-                <article class="achievement-card"
-                         data-type="leadership"
-                         data-category="extracurricular"
-                         data-title="Student Leadership Award">
-
-
-                    <div class="achievement-card-top">
-
-
-                        <div class="achievement-badge">
-
-
-                            <div class="badge-icon orange">
-
-                                <i class="fa-solid fa-star"></i>
-
-                            </div>
-
-
-                            <div>
-
-                                <span class="achievement-label">
-
-                                    LEADERSHIP
-
-                                </span>
-
-
-                                <span class="achievement-rank">
-
-                                    Outstanding Leader
-
-                                </span>
-
-                            </div>
-
-
-                        </div>
-
-
-
-                        <div class="card-actions">
-
-
-                            <button type="button"
-                                    class="card-action edit-achievement"
-                                    title="Edit Achievement">
-
-
-                                <i class="fa-solid fa-pen"></i>
-
-
-                            </button>
-
-
-                            <button type="button"
-                                    class="card-action delete-achievement"
-                                    title="Delete Achievement">
-
-
-                                <i class="fa-solid fa-trash"></i>
-
-
-                            </button>
-
-
-                        </div>
-
-
-                    </div>
-
-
-
-                    <div class="achievement-card-content">
-
-
-                        <h3>
-
-                            Student Leadership Award
-
-                        </h3>
-
-
-                        <div class="achievement-organization">
-
-
-                            <i class="fa-solid fa-building"></i>
-
-
-                            <span>
-
-                                Computer Science Association
-
-                            </span>
-
-
-                        </div>
-
-
-                        <div class="achievement-date">
-
-
-                            <i class="fa-regular fa-calendar"></i>
-
-
-                            <span>
-
-                                November 05, 2025
-
-                            </span>
-
-
-                        </div>
-
-
-                        <p class="achievement-description">
-
-                            Received recognition for demonstrating
-                            leadership, teamwork and effective
-                            communication while coordinating student
-                            activities.
-
-                        </p>
-
-
-                        <div class="achievement-skills">
-
-
-                            <span>Leadership</span>
-
-                            <span>Teamwork</span>
-
-                            <span>Communication</span>
-
-
-                        </div>
-
-
-                    </div>
-
-
-
-                    <div class="achievement-card-bottom">
-
-
-                        <span class="achievement-status">
-
-
-                            <i class="fa-solid fa-circle-check"></i>
-
-                            Verified Achievement
-
-
-                        </span>
-
-
-                        <button type="button"
-                                class="view-achievement"
-                                data-title="Student Leadership Award">
-
-
-                            View Details
-
-                            <i class="fa-solid fa-arrow-right"></i>
-
-
-                        </button>
-
-
-                    </div>
-
-
-                </article>
-
+    if (!empty($achievement_date)) {
+
+        $formatted_date =
+            date(
+                "F d, Y",
+                strtotime($achievement_date)
+            );
+
+    }
+
+
+    /*==============================================
+                 SEARCH DATA
+    ==============================================*/
+
+    $search_title =
+        htmlspecialchars(
+            strtolower($achievement_title),
+            ENT_QUOTES,
+            "UTF-8"
+        );
+
+    $search_type =
+        htmlspecialchars(
+            strtolower($achievement_type),
+            ENT_QUOTES,
+            "UTF-8"
+        );
+
+    $search_category =
+        htmlspecialchars(
+            strtolower($achievement_category),
+            ENT_QUOTES,
+            "UTF-8"
+        );
+        ?>
+        
+    <article class="achievement-card"
+         data-id="<?php echo $achievement_id; ?>"
+         data-type="<?php echo $search_type; ?>"
+         data-category="<?php echo $search_category; ?>"
+         data-title="<?php echo $search_title; ?>"
+         data-date="<?php echo htmlspecialchars($achievement_date, ENT_QUOTES, 'UTF-8'); ?>"
+         data-visibility="<?php echo htmlspecialchars($visibility, ENT_QUOTES, 'UTF-8'); ?>"
+         data-certificate="<?php echo htmlspecialchars($certificate_file, ENT_QUOTES, 'UTF-8'); ?>">
+
+    <!--==================================================
+                     ACHIEVEMENT CARD TOP
+    ===================================================-->
+
+    <div class="achievement-card-top">
+
+
+        <div class="achievement-badge">
+
+            <div class="badge-icon <?php echo $badge_color; ?>">
+
+                <i class="fa-solid <?php echo $type_icon; ?>"></i>
 
             </div>
+
+
+            <div>
+
+                <span class="achievement-label">
+
+                    <?php echo htmlspecialchars($type_label); ?>
+
+                </span>
+
+
+                <?php if ($position !== ""): ?>
+
+                    <span class="achievement-rank">
+
+                        <?php
+                        echo htmlspecialchars($position);
+                        ?>
+
+                    </span>
+
+                <?php endif; ?>
+
+            </div>
+
+        </div>
+
+
+        <!-- Actions -->
+
+        <div class="card-actions">
+
+
+            <button type="button"
+                    class="card-action edit-achievement"
+                    title="Edit Achievement"
+                    data-id="<?php echo $achievement_id; ?>">
+
+                <i class="fa-solid fa-pen"></i>
+
+            </button>
+
+
+            <button type="button"
+                    class="card-action delete-achievement"
+                    title="Delete Achievement"
+                    data-id="<?php echo $achievement_id; ?>">
+
+                <i class="fa-solid fa-trash"></i>
+
+            </button>
+
+
+        </div>
+
+    </div>
+
+
+    <!--==================================================
+                     CARD CONTENT
+    ===================================================-->
+
+    <div class="achievement-card-content">
+
+
+        <h3>
+
+            <?php
+            echo htmlspecialchars(
+                $achievement_title
+            );
+            ?>
+
+        </h3>
+
+
+        <div class="achievement-organization">
+
+            <i class="fa-solid fa-building"></i>
+
+            <span>
+
+                <?php
+                echo htmlspecialchars(
+                    $organization
+                );
+                ?>
+
+            </span>
+
+        </div>
+
+
+        <div class="achievement-date">
+
+            <i class="fa-regular fa-calendar"></i>
+
+            <span>
+
+                <?php
+                echo htmlspecialchars(
+                    $formatted_date
+                );
+                ?>
+
+            </span>
+
+        </div>
+
+
+        <p class="achievement-description">
+
+            <?php
+            echo htmlspecialchars(
+                $achievement_description
+            );
+            ?>
+
+        </p>
+
+
+        <!-- Skills -->
+
+        <?php if ($achievement_skills !== ""): ?>
+
+            <div class="achievement-skills">
+
+                <?php
+
+                $skills =
+                    explode(
+                        ",",
+                        $achievement_skills
+                    );
+
+                foreach ($skills as $skill):
+
+                    $skill = trim($skill);
+
+                    if ($skill === "") {
+                        continue;
+                    }
+
+                ?>
+
+                    <span>
+
+                        <?php
+                        echo htmlspecialchars(
+                            $skill
+                        );
+                        ?>
+
+                    </span>
+
+                <?php endforeach; ?>
+
+            </div>
+
+        <?php endif; ?>
+
+
+    </div>
+
+
+    <!--==================================================
+                     CARD BOTTOM
+    ===================================================-->
+
+    <div class="achievement-card-bottom">
+
+
+        <span class="achievement-status">
+
+            <i class="fa-solid fa-circle-check"></i>
+
+            <?php
+            echo $visibility === "public"
+                ? "Public Achievement"
+                : "Private Achievement";
+            ?>
+
+        </span>
+
+
+        <button type="button"
+                class="view-achievement"
+                data-id="<?php echo $achievement_id; ?>">
+
+            View Details
+
+            <i class="fa-solid fa-arrow-right"></i>
+
+        </button>
+
+
+    </div>
+
+
+</article>
+
+
+<?php endwhile; ?>
+</div>
 
 
 

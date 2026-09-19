@@ -2059,3 +2059,160 @@ img {
     }
 
 }
+/*==================================================
+              SUCCESS / ERROR MESSAGES
+==================================================*/
+
+.success-message,
+.error-message {
+    width: calc(100% - 360px);
+margin: 18px 30px 18px 330px;
+    padding: 14px 20px;
+    box-sizing: border-box;
+
+    border-radius: 10px;
+
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
+
+    display: flex;
+    align-items: center;
+
+    border: 1px solid transparent;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+
+    overflow: visible;
+
+    animation: achievementMessageFade 5s ease forwards;
+}
+
+.success-message {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+.error-message {
+    background: #fef2f2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+
+@keyframes achievementMessageFade {
+    0% {
+        opacity: 1;
+    }
+
+    85% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+/*==================================================
+              NOTIFICATION POPUP
+==================================================*/
+
+.notification-popup {
+    position: absolute;
+    top: 70px;
+    right: 30px;
+    width: 340px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e5e7eb;
+    z-index: 1000;
+
+    display: none;
+}
+
+.notification-popup.show {
+    display: block;
+}
+
+.notification-popup-header {
+    padding: 16px 18px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.notification-popup-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #0f172a;
+}
+
+.notification-list {
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 14px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 14px;
+    color: #334155;
+    line-height: 1.5;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item:hover {
+    background: #f8fafc;
+}
+
+.notification-empty {
+    padding: 25px 18px;
+    text-align: center;
+    color: #64748b;
+    font-size: 14px;
+}
+
+/*==================================================
+              MODAL CERTIFICATE
+==================================================*/
+
+.modal-certificate-section {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.modal-certificate-section h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.modal-certificate-section p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.view-certificate-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #f59e0b;
+    color: #ffffff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: 0.2s ease;
+}
+
+.view-certificate-btn:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+}
