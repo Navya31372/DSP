@@ -479,37 +479,75 @@ function setupEditButtons() {
 
 function setupNotification() {
 
-    const notification =
-        document.querySelector(".notification");
+    const notificationBtn =
+        document.getElementById("notificationBtn");
 
-    const popup =
-        document.querySelector(".notification-popup");
+    const notificationPopup =
+        document.getElementById("notificationPopup");
+
+    const notificationBadge =
+        document.getElementById("notificationBadge");
 
 
-    if (!notification || !popup) {
+    if (!notificationBtn || !notificationPopup) {
 
         return;
 
     }
 
 
-    notification.addEventListener("click", function (event) {
+    notificationBtn.addEventListener(
+        "click",
+        function (event) {
 
-        event.stopPropagation();
+            event.stopPropagation();
 
-        popup.style.display =
-            popup.style.display === "block"
-                ? "none"
-                : "block";
-
-    });
+            notificationPopup.classList.toggle(
+                "show"
+            );
 
 
-    document.addEventListener("click", function () {
+            if (
+                notificationBadge &&
+                notificationBadge.textContent.trim() !== "0"
+            ) {
 
-        popup.style.display = "none";
+                fetch(
+                    "mark_notifications_read.php",
+                    {
+                        method: "POST"
+                    }
+                )
+                .then(function () {
 
-    });
+                    notificationBadge.textContent = "0";
+
+                    notificationBadge.style.display =
+                        "none";
+
+                })
+                .catch(function (error) {
+
+                    console.error(error);
+
+                });
+
+            }
+
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        function () {
+
+            notificationPopup.classList.remove(
+                "show"
+            );
+
+        }
+    );
 
 }
 

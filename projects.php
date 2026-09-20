@@ -756,19 +756,19 @@ $projects_result = mysqli_stmt_get_result($stmt);
 
                 <!-- Notification -->
 
-                <div class="notification">
+<div class="notification" id="notificationBtn">
 
     <i class="fa-solid fa-bell"></i>
 
-    <?php if ($unread_notifications > 0): ?>
+    <span
+        class="notification-badge"
+        id="notificationBadge"
+        style="<?= $unread_notifications > 0 ? '' : 'display:none;' ?>"
+    >
+        <?= $unread_notifications ?>
+    </span>
 
-        <span class="notification-badge">
-            <?= $unread_notifications ?>
-        </span>
-
-    <?php endif; ?>
-
-    <div class="notification-popup">
+    <div class="notification-popup" id="notificationPopup">
 
         <h4>Notifications</h4>
 
@@ -801,6 +801,7 @@ $projects_result = mysqli_stmt_get_result($stmt);
     </div>
 
 </div>
+
 
 
                 <!-- User -->
