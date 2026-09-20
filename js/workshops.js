@@ -552,11 +552,13 @@ document.addEventListener("click", function (event) {
 
     function closeWorkshopModal() {
 
-        workshopModal.classList.remove("show");
+    workshopModal.classList.remove("show");
 
-        document.body.style.overflow = "";
+    workshopModal.style.display = "none";
 
-    }
+    document.body.style.overflow = "";
+
+}
 
 
     if (closeModal) {
