@@ -284,6 +284,71 @@ img {
     position: relative;
 }
 
+/*==================================================
+              NOTIFICATION POPUP
+===================================================*/
+
+.notification-popup {
+    display: none;
+    position: absolute;
+    top: 48px;
+    right: 0;
+    width: 320px;
+    max-height: 360px;
+    overflow-y: auto;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+    padding: 15px;
+    z-index: 2000;
+}
+
+.notification.show-notifications .notification-popup {
+    display: block;
+}
+
+.notification-popup h4 {
+    margin: 0 0 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.notification-item {
+    padding: 10px 4px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item p {
+    margin: 0;
+    color: #475569;
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.notification-item small {
+    display: block;
+    margin-top: 5px;
+    color: #94a3b8;
+    font-size: 9px;
+}
+
+.no-notifications {
+    margin: 0;
+    padding: 15px 5px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 11px;
+}
+
 
 .notification span {
     position: absolute;
@@ -2087,4 +2152,441 @@ img {
         padding: 14px 18px;
     }
 
+}
+
+/*==================================================
+            INTERNSHIP DOCUMENTS
+===================================================*/
+
+.modal-documents {
+    margin-top: 28px;
+    padding: 20px;
+    background: #f0fdfa;
+    border: 1px solid #99f6e4;
+    border-radius: 14px;
+}
+
+.modal-documents h3 {
+    margin: 0 0 16px 0;
+    color: #0f172a;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.modal-documents h3 i {
+    color: #0d9488;
+    margin-right: 8px;
+}
+
+.modal-document-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.modal-document-item {
+    flex: 1;
+    min-width: 220px;
+}
+
+.modal-document-item a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+
+    padding: 13px 18px;
+
+    background: #0f766e;
+    color: #ffffff;
+
+    border-radius: 10px;
+
+    text-decoration: none;
+
+    font-size: 15px;
+    font-weight: 600;
+
+    border: 1px solid #0f766e;
+
+    transition:
+        background 0.25s ease,
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.modal-document-item a i {
+    font-size: 17px;
+}
+
+.modal-document-item a:hover {
+    background: #115e59;
+    border-color: #115e59;
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 6px 15px rgba(15, 118, 110, 0.25);
+}
+
+/*==================================================
+        INTERNSHIP MODAL CONTENT SECTIONS
+===================================================*/
+
+/* DESCRIPTION + RESPONSIBILITIES */
+
+.modal-text-section {
+    margin-top: 24px;
+    padding: 20px;
+
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #0d9488;
+
+    border-radius: 14px;
+}
+
+.modal-text-section h3 {
+    margin: 0 0 12px 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 9px;
+
+    color: #0f172a;
+
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.modal-text-section h3 i {
+    color: #0d9488;
+    font-size: 18px;
+}
+
+.modal-text-section p {
+    margin: 0;
+
+    color: #475569;
+
+    font-size: 15px;
+    line-height: 1.7;
+
+    white-space: pre-line;
+}
+
+
+/* TECHNOLOGIES + SKILLS GAINED */
+
+.modal-skills {
+    margin-top: 24px;
+    padding: 20px;
+
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+
+    border-radius: 14px;
+}
+
+.modal-skills h3 {
+    margin: 0 0 15px 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 9px;
+
+    color: #0f172a;
+
+    font-size: 19px;
+    font-weight: 700;
+}
+
+.modal-skills h3 i {
+    color: #0d9488;
+    font-size: 18px;
+}
+
+
+/* TECHNOLOGY / SKILL TAGS */
+
+.modal-skills .internship-skills {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 9px;
+}
+
+.modal-skills .internship-skills span {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 8px 13px;
+
+    background: #ffffff;
+
+    color: #0f766e;
+
+    border: 1px solid #99f6e4;
+
+    border-radius: 8px;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    transition:
+        background 0.25s ease,
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.modal-skills .internship-skills span:hover {
+    background: #ccfbf1;
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 4px 10px rgba(13, 148, 136, 0.15);
+}
+
+
+/* NO DATA MESSAGE */
+
+.modal-skills .internship-skills span:first-child:only-child {
+    color: #64748b;
+
+    background: #f1f5f9;
+
+    border-color: #e2e8f0;
+
+    font-weight: 500;
+}
+
+/*==================================================
+          INTERNSHIP MODAL DETAIL CARDS
+===================================================*/
+
+.modal-detail-grid {
+    gap: 16px;
+}
+
+.modal-detail-item {
+    position: relative;
+
+    padding: 20px;
+
+    background: #f0fdfa;
+
+    border: 1px solid #ccfbf1;
+    border-left: 4px solid #0d9488;
+
+    border-radius: 14px;
+
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        border-color 0.25s ease;
+}
+
+
+/* ICON */
+
+.modal-detail-item > i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 38px;
+    height: 38px;
+
+    margin-bottom: 12px;
+
+    background: #ccfbf1;
+
+    color: #0d9488;
+
+    border-radius: 10px;
+
+    font-size: 17px;
+}
+
+
+/* LABEL */
+
+.modal-detail-item strong {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: #0f172a;
+
+    font-size: 14px;
+    font-weight: 700;
+}
+
+
+/* VALUE */
+
+.modal-detail-item span {
+    display: block;
+
+    color: #475569;
+
+    font-size: 14px;
+    line-height: 1.5;
+
+    word-break: break-word;
+}
+
+
+/* HOVER EFFECT */
+
+.modal-detail-item:hover {
+    transform: translateY(-2px);
+
+    border-color: #5eead4;
+
+    box-shadow:
+        0 6px 16px rgba(15, 118, 110, 0.12);
+}
+
+
+/* COMPANY WEBSITE LINK */
+
+.modal-detail-item span a {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    color: #0f766e;
+
+    font-weight: 600;
+
+    text-decoration: none;
+
+    transition: color 0.2s ease;
+}
+
+.modal-detail-item span a:hover {
+    color: #115e59;
+
+    text-decoration: underline;
+}
+
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+
+    .modal-detail-item {
+        padding: 16px;
+    }
+
+    .modal-detail-item > i {
+        width: 34px;
+        height: 34px;
+
+        font-size: 15px;
+    }
+
+}
+
+/*==================================================
+              INTERNSHIP MODAL HEADER
+===================================================*/
+
+.modal-header {
+    background: #f0fdfa;
+    border-bottom: 1px solid #99f6e4;
+}
+
+
+/* INTERNSHIP ICON */
+
+.modal-header .modal-icon {
+    background: #ccfbf1;
+    color: #0d9488;
+}
+
+
+/* SMALL "INTERNSHIP DETAILS" LABEL */
+
+/* FIX - INTERNSHIP DETAILS LABEL COLOR */
+
+.modal-header .modal-title-area > div > span {
+    color: #0d9488 !important;
+}
+
+
+/* INTERNSHIP TITLE */
+
+.modal-header h2 {
+    color: #0f172a;
+}
+
+
+/* CLOSE BUTTON */
+
+.modal-header .modal-close,
+.modal-header button {
+    color: #0f766e;
+    background: #ccfbf1;
+    border: 1px solid #99f6e4;
+
+    transition:
+        background 0.25s ease,
+        color 0.25s ease,
+        transform 0.25s ease;
+}
+
+
+/* CLOSE BUTTON HOVER */
+
+.modal-header .modal-close:hover,
+.modal-header button:hover {
+    background: #0d9488;
+    color: #ffffff;
+
+    transform: rotate(90deg);
+}
+
+/*==================================================
+              SUCCESS MESSAGE
+===================================================*/
+
+.success-message {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+
+    position: fixed;
+    top: 25px;
+    right: 25px;
+
+    padding: 14px 20px;
+
+    background: #ecfdf5;
+    color: #047857;
+
+    border: 1px solid #a7f3d0;
+    border-left: 4px solid #10b981;
+
+    border-radius: 10px;
+
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+
+    font-size: 15px;
+    font-weight: 600;
+
+    z-index: 9999;
+}
+
+.success-message i {
+    font-size: 18px;
+    color: #10b981;
 }
