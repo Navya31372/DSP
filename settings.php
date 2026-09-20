@@ -19,6 +19,105 @@ if (!isset($_SESSION["user_id"])) {
 
 $user_id = $_SESSION["user_id"];
 
+/* Notification count */
+
+$notification_count = 0;
+
+$notification_query = "
+    SELECT COUNT(*) AS notification_count
+    FROM notifications
+    WHERE user_id = ?
+    AND is_read = 0
+";
+
+$notification_stmt =
+    mysqli_prepare(
+        $conn,
+        $notification_query
+    );
+
+mysqli_stmt_bind_param(
+    $notification_stmt,
+    "i",
+    $user_id
+);
+
+mysqli_stmt_execute(
+    $notification_stmt
+);
+
+$notification_result =
+    mysqli_stmt_get_result(
+        $notification_stmt
+    );
+
+$notification_data =
+    mysqli_fetch_assoc(
+        $notification_result
+    );
+
+$notification_count =
+    (int) (
+        $notification_data["notification_count"]
+        ?? 0
+    );
+
+mysqli_stmt_close(
+    $notification_stmt
+);
+
+
+/* Latest notifications */
+
+$notifications = [];
+
+$notifications_query = "
+    SELECT
+        message,
+        created_at
+    FROM notifications
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+    LIMIT 10
+";
+
+$notifications_stmt =
+    mysqli_prepare(
+        $conn,
+        $notifications_query
+    );
+
+mysqli_stmt_bind_param(
+    $notifications_stmt,
+    "i",
+    $user_id
+);
+
+mysqli_stmt_execute(
+    $notifications_stmt
+);
+
+$notifications_result =
+    mysqli_stmt_get_result(
+        $notifications_stmt
+    );
+
+while (
+    $notification =
+    mysqli_fetch_assoc(
+        $notifications_result
+    )
+) {
+
+    $notifications[] =
+        $notification;
+
+}
+
+mysqli_stmt_close(
+    $notifications_stmt
+);
+
 
 /* Get user information */
 
@@ -67,6 +166,92 @@ $resume = $profile['resume'] ?? '';
 $profile_photo = $profile['profile_photo'] ?? '';
 
 mysqli_stmt_close($stmt);
+
+/* Get saved settings */
+
+$sql = "SELECT * FROM user_settings WHERE user_id = ?";
+
+$stmt = mysqli_prepare($conn, $sql);
+
+mysqli_stmt_bind_param(
+    $stmt,
+    "i",
+    $user_id
+);
+
+mysqli_stmt_execute($stmt);
+
+$result = mysqli_stmt_get_result($stmt);
+
+$userSettings = mysqli_fetch_assoc($result);
+
+mysqli_stmt_close($stmt);
+
+
+/* Create default settings if none exist */
+
+if (!$userSettings) {
+
+    $sql = "
+        INSERT INTO user_settings (
+            user_id,
+            achievement_notifications,
+            certificate_notifications,
+            workshop_notifications,
+            security_notifications,
+            profile_visibility,
+            skills_visibility,
+            contact_visibility
+        )
+        VALUES (?, 1, 1, 1, 1, 'public', 1, 0)
+    ";
+
+    $stmt = mysqli_prepare($conn, $sql);
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $user_id
+    );
+
+    mysqli_stmt_execute($stmt);
+
+    mysqli_stmt_close($stmt);
+
+    $userSettings = [
+        "achievement_notifications" => 1,
+        "certificate_notifications" => 1,
+        "workshop_notifications" => 1,
+        "security_notifications" => 1,
+        "profile_visibility" => "public",
+        "skills_visibility" => 1,
+        "contact_visibility" => 0
+    ];
+}
+
+
+/* Store settings values */
+
+$achievementNotifications =
+    (int) $userSettings["achievement_notifications"];
+
+$certificateNotifications =
+    (int) $userSettings["certificate_notifications"];
+
+$workshopNotifications =
+    (int) $userSettings["workshop_notifications"];
+
+$securityNotifications =
+    (int) $userSettings["security_notifications"];
+
+$profileVisibility =
+    $userSettings["profile_visibility"];
+
+$skillsVisibility =
+    (int) $userSettings["skills_visibility"];
+
+$contactVisibility =
+    (int) $userSettings["contact_visibility"];
 
 ?>
 <!DOCTYPE html>
@@ -412,18 +597,70 @@ mysqli_stmt_close($stmt);
 
                 <!-- Notification -->
 
-                <button type="button"
-                        class="notification">
+<button type="button"
+        class="notification"
+        id="notificationBtn">
 
-                    <i class="fa-regular fa-bell"></i>
+    <i class="fa-regular fa-bell"></i>
 
-                    <span>
+    <span id="notificationBadge">
 
-                        2
+        <?php echo $notification_count; ?>
 
-                    </span>
+    </span>
 
-                </button>
+</button>
+
+<!-- Notification Popup -->
+
+<div class="notification-popup"
+     id="notificationPopup">
+
+    <div class="notification-popup-header">
+
+        <strong>Notifications</strong>
+
+    </div>
+
+    <div class="notification-list">
+
+        <?php if (empty($notifications)): ?>
+
+            <div class="no-notifications">
+                No new notifications
+            </div>
+
+        <?php else: ?>
+
+            <?php foreach ($notifications as $notification): ?>
+
+                <div class="notification-item">
+
+                    <p>
+                        <?php
+                        echo htmlspecialchars(
+                            $notification["message"]
+                        );
+                        ?>
+                    </p>
+
+                    <small>
+                        <?php
+                        echo htmlspecialchars(
+                            $notification["created_at"]
+                        );
+                        ?>
+                    </small>
+
+                </div>
+
+            <?php endforeach; ?>
+
+        <?php endif; ?>
+
+    </div>
+
+</div>
 
 
 
@@ -674,8 +911,34 @@ mysqli_stmt_close($stmt);
 
 
 
-                    <form id="accountSettingsForm"
-                          enctype="multipart/form-data">
+                    <form id="accountSettingsForm" enctype="multipart/form-data">
+    <input type="hidden"
+           name="achievement_notifications"
+           value="<?php echo $achievementNotifications; ?>">
+
+    <input type="hidden"
+           name="certificate_notifications"
+           value="<?php echo $certificateNotifications; ?>">
+
+    <input type="hidden"
+           name="workshop_notifications"
+           value="<?php echo $workshopNotifications; ?>">
+
+    <input type="hidden"
+           name="security_notifications"
+           value="<?php echo $securityNotifications; ?>">
+
+    <input type="hidden"
+           name="profile_visibility"
+           value="<?php echo htmlspecialchars($profileVisibility); ?>">
+
+    <input type="hidden"
+           name="skills_visibility"
+           value="<?php echo $skillsVisibility; ?>">
+
+    <input type="hidden"
+           name="contact_visibility"
+           value="<?php echo $contactVisibility; ?>">
 
 
 
@@ -1217,8 +1480,8 @@ mysqli_stmt_close($stmt);
                             <label class="switch">
 
                                 <input type="checkbox"
-                                       id="achievementNotifications"
-                                       checked>
+       id="achievementNotifications"
+       <?php echo $achievementNotifications ? 'checked' : ''; ?>>
 
                                 <span class="slider"></span>
 
@@ -1259,8 +1522,8 @@ mysqli_stmt_close($stmt);
                             <label class="switch">
 
                                 <input type="checkbox"
-                                       id="certificateNotifications"
-                                       checked>
+       id="certificateNotifications"
+       <?php echo $certificateNotifications ? 'checked' : ''; ?>>
 
                                 <span class="slider"></span>
 
@@ -1301,8 +1564,8 @@ mysqli_stmt_close($stmt);
                             <label class="switch">
 
                                 <input type="checkbox"
-                                       id="workshopNotifications"
-                                       checked>
+       id="workshopNotifications"
+       <?php echo $workshopNotifications ? 'checked' : ''; ?>>
 
                                 <span class="slider"></span>
 
@@ -1343,8 +1606,8 @@ mysqli_stmt_close($stmt);
                             <label class="switch">
 
                                 <input type="checkbox"
-                                       id="securityNotifications"
-                                       checked>
+       id="securityNotifications"
+       <?php echo $securityNotifications ? 'checked' : ''; ?>>
 
                                 <span class="slider"></span>
 
@@ -1435,26 +1698,21 @@ mysqli_stmt_close($stmt);
 
 
                         <select id="profileVisibility">
+    <option value="public"
+        <?php echo ($profileVisibility === 'public') ? 'selected' : ''; ?>>
+        Public
+    </option>
 
-                            <option value="public">
+    <option value="private"
+        <?php echo ($profileVisibility === 'private') ? 'selected' : ''; ?>>
+        Private
+    </option>
 
-                                Public
-
-                            </option>
-
-                            <option value="private">
-
-                                Private
-
-                            </option>
-
-                            <option value="limited">
-
-                                Limited
-
-                            </option>
-
-                        </select>
+    <option value="limited"
+        <?php echo ($profileVisibility === 'limited') ? 'selected' : ''; ?>>
+        Limited
+    </option>
+</select>
 
 
                     </div>
@@ -1496,8 +1754,8 @@ mysqli_stmt_close($stmt);
                         <label class="switch">
 
                             <input type="checkbox"
-                                   id="skillsVisibility"
-                                   checked>
+       id="skillsVisibility"
+       <?php echo $skillsVisibility ? 'checked' : ''; ?>>
 
                             <span class="slider"></span>
 
@@ -1543,7 +1801,8 @@ mysqli_stmt_close($stmt);
                         <label class="switch">
 
                             <input type="checkbox"
-                                   id="contactVisibility">
+       id="contactVisibility"
+       <?php echo $contactVisibility ? 'checked' : ''; ?>>
 
                             <span class="slider"></span>
 

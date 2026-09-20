@@ -33,6 +33,53 @@ $github = trim($_POST["github"] ?? '');
 $linkedin = trim($_POST["linkedin"] ?? '');
 $portfolio = trim($_POST["portfolio"] ?? '');
 
+/* Get notification and privacy settings */
+
+$achievement_notifications =
+    ($_POST["achievement_notifications"] ?? "0") === "1"
+    ? 1
+    : 0;
+
+$certificate_notifications =
+    ($_POST["certificate_notifications"] ?? "0") === "1"
+    ? 1
+    : 0;
+
+$workshop_notifications =
+    ($_POST["workshop_notifications"] ?? "0") === "1"
+    ? 1
+    : 0;
+
+$security_notifications =
+    ($_POST["security_notifications"] ?? "0") === "1"
+    ? 1
+    : 0;
+
+$profile_visibility =
+    trim($_POST["profile_visibility"] ?? 'public');
+
+$skills_visibility =
+    ($_POST["skills_visibility"] ?? "0") === "1"
+    ? 1
+    : 0;
+
+$contact_visibility =
+    ($_POST["contact_visibility"] ?? "0") === "1"
+    ? 1
+    : 0;
+
+
+/* Validate profile visibility */
+
+if (!in_array(
+    $profile_visibility,
+    ["public", "private", "limited"],
+    true
+)) {
+
+    $profile_visibility = "public";
+}
+
 /* Get the user's existing resume */
 
 $old_resume = '';
@@ -287,11 +334,64 @@ if (!mysqli_stmt_execute($stmt)) {
 mysqli_stmt_close($stmt);
 
 
+/* Update notification and privacy settings */
+
+$sql = "
+    INSERT INTO user_settings (
+        user_id,
+        achievement_notifications,
+        certificate_notifications,
+        workshop_notifications,
+        security_notifications,
+        profile_visibility,
+        skills_visibility,
+        contact_visibility
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+        achievement_notifications = VALUES(achievement_notifications),
+        certificate_notifications = VALUES(certificate_notifications),
+        workshop_notifications = VALUES(workshop_notifications),
+        security_notifications = VALUES(security_notifications),
+        profile_visibility = VALUES(profile_visibility),
+        skills_visibility = VALUES(skills_visibility),
+        contact_visibility = VALUES(contact_visibility)
+";
+
+$stmt = mysqli_prepare($conn, $sql);
+
+mysqli_stmt_bind_param(
+    $stmt,
+    "iiiiisii",
+    $user_id,
+    $achievement_notifications,
+    $certificate_notifications,
+    $workshop_notifications,
+    $security_notifications,
+    $profile_visibility,
+    $skills_visibility,
+    $contact_visibility
+);
+
+if (!mysqli_stmt_execute($stmt)) {
+
+    echo json_encode([
+        "success" => false,
+        "message" => "Account information was saved, but settings could not be updated."
+    ]);
+
+    mysqli_stmt_close($stmt);
+    exit;
+}
+
+mysqli_stmt_close($stmt);
+
+
 /* Success */
 
 echo json_encode([
     "success" => true,
-    "message" => "Account information saved successfully."
+    "message" => "Settings saved successfully."
 ]);
 
 ?>

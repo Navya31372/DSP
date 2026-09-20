@@ -515,6 +515,61 @@ if (saveAccountBtn) {
             const formData =
                 new FormData(accountForm);
 
+            formData.set(
+    "achievement_notifications",
+    document.getElementById(
+        "achievementNotifications"
+    ).checked ? "1" : "0"
+);
+
+formData.set(
+    "certificate_notifications",
+    document.getElementById(
+        "certificateNotifications"
+    ).checked ? "1" : "0"
+);
+
+formData.set(
+    "workshop_notifications",
+    document.getElementById(
+        "workshopNotifications"
+    ).checked ? "1" : "0"
+);
+
+formData.set(
+    "security_notifications",
+    document.getElementById(
+        "securityNotifications"
+    ).checked ? "1" : "0"
+);
+
+formData.set(
+    "profile_visibility",
+    document.getElementById(
+        "profileVisibility"
+    ).value
+);
+
+const skillsVisibilityInput =
+    document.getElementById("skillsVisibility");
+
+formData.delete("skills_visibility");
+
+formData.append(
+    "skills_visibility",
+    skillsVisibilityInput &&
+    skillsVisibilityInput.checked
+        ? "1"
+        : "0"
+);
+
+formData.set(
+    "contact_visibility",
+    document.getElementById(
+        "contactVisibility"
+    ).checked ? "1" : "0"
+);
+
 
             fetch("save_settings.php", {
 
@@ -719,58 +774,122 @@ if (saveAccountBtn) {
 
 
                 /*
-                ----------------------------------------------
-                Simulated password update
-                ----------------------------------------------
-                */
+----------------------------------------------
+Real password update
+----------------------------------------------
+*/
 
-                const originalText =
-                    this.innerHTML;
-
-
-                this.disabled = true;
-
-                this.innerHTML =
-                    '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
+const originalText =
+    this.innerHTML;
 
 
-                setTimeout(function () {
+this.disabled = true;
 
-                    changePasswordBtn.disabled = false;
-
-                    changePasswordBtn.innerHTML =
-                        originalText;
+this.innerHTML =
+    '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
 
 
-                    if (securityForm) {
+const formData =
+    new FormData();
 
-                        securityForm.reset();
+formData.append(
+    "current_password",
+    currentPassword.value
+);
 
-                    }
+formData.append(
+    "new_password",
+    newPassword.value
+);
 
-
-                    setInputState(
-                        currentPassword,
-                        null
-                    );
-
-                    setInputState(
-                        newPassword,
-                        null
-                    );
-
-                    setInputState(
-                        confirmPassword,
-                        null
-                    );
+formData.append(
+    "confirm_password",
+    confirmPassword.value
+);
 
 
-                    showMessage(
-                        "Password updated successfully.",
-                        "success"
-                    );
+fetch(
+    "change_password.php",
+    {
+        method: "POST",
+        body: formData
+    }
+)
 
-                }, 800);
+.then(function (response) {
+
+    return response.json();
+
+})
+
+.then(function (data) {
+
+    changePasswordBtn.disabled =
+        false;
+
+    changePasswordBtn.innerHTML =
+        originalText;
+
+
+    if (data.success) {
+
+        if (securityForm) {
+
+            securityForm.reset();
+
+        }
+
+
+        setInputState(
+            currentPassword,
+            null
+        );
+
+        setInputState(
+            newPassword,
+            null
+        );
+
+        setInputState(
+            confirmPassword,
+            null
+        );
+
+
+        showMessage(
+            data.message,
+            "success"
+        );
+
+    }
+    else {
+
+        showMessage(
+            data.message,
+            "error"
+        );
+
+    }
+
+})
+
+.catch(function (error) {
+
+    console.error(error);
+
+    changePasswordBtn.disabled =
+        false;
+
+    changePasswordBtn.innerHTML =
+        originalText;
+
+
+    showMessage(
+        "Failed to update password.",
+        "error"
+    );
+
+});
 
             }
         );
@@ -778,168 +897,29 @@ if (saveAccountBtn) {
     }
 
 
+/*==================================================
+             PROFILE VISIBILITY
+==================================================*/
 
-    /*==================================================
-                NOTIFICATION SETTINGS
-    ==================================================*/
-
-    const notificationSwitches =
-        document.querySelectorAll(
-            "#notifications .switch input"
-        );
-
-
-    notificationSwitches.forEach(function (toggle) {
-
-        toggle.addEventListener(
-            "change",
-            function () {
-
-                const toggleRow =
-                    this.closest(".toggle-row");
+const profileVisibility =
+    document.getElementById(
+        "profileVisibility"
+    );
 
 
-                if (!toggleRow) {
-                    return;
-                }
+if (profileVisibility) {
 
+    profileVisibility.addEventListener(
+        "change",
+        function () {
 
-                const title =
-                    toggleRow.querySelector(
-                        ".toggle-title"
-                    );
+            saveUserSettings();
 
+        }
+    );
 
-                let notificationName =
-                    "Notification preference";
-
-
-                if (title) {
-
-                    notificationName =
-                        title.textContent.trim();
-
-                }
-
-
-                if (this.checked) {
-
-                    showMessage(
-                        notificationName +
-                        " enabled.",
-                        "success"
-                    );
-
-                }
-
-                else {
-
-                    showMessage(
-                        notificationName +
-                        " disabled.",
-                        "info"
-                    );
-
-                }
-
-            }
-        );
-
-    });
-
-
-
-    /*==================================================
-                    PRIVACY SETTINGS
-    ==================================================*/
-
-    const privacySwitches =
-        document.querySelectorAll(
-            "#privacy .switch input"
-        );
-
-
-    privacySwitches.forEach(function (toggle) {
-
-        toggle.addEventListener(
-            "change",
-            function () {
-
-                if (this.checked) {
-
-                    showMessage(
-                        "Privacy preference enabled.",
-                        "success"
-                    );
-
-                }
-
-                else {
-
-                    showMessage(
-                        "Privacy preference disabled.",
-                        "info"
-                    );
-
-                }
-
-            }
-        );
-
-    });
-
-
-
-    /*==================================================
-                PROFILE VISIBILITY
-    ==================================================*/
-
-    const profileVisibility =
-        document.getElementById(
-            "profileVisibility"
-        );
-
-
-    if (profileVisibility) {
-
-        profileVisibility.addEventListener(
-            "change",
-            function () {
-
-                let message = "";
-
-
-                if (this.value === "public") {
-
-                    message =
-                        "Your profile is now public.";
-
-                }
-
-                else if (this.value === "private") {
-
-                    message =
-                        "Your profile is now private.";
-
-                }
-
-                else {
-
-                    message =
-                        "Your profile visibility is limited.";
-
-                }
-
-
-                showMessage(
-                    message,
-                    "success"
-                );
-
-            }
-        );
-
-    }
+}
+    
 
 
 
@@ -979,35 +959,120 @@ if (saveAccountBtn) {
                 }
 
 
-                /*
-                ------------------------------------------------
-                Frontend demonstration.
-                Connect this section to PHP/MySQL later.
-                ------------------------------------------------
-                */
+            /*
+------------------------------------------------
+Real account deletion
+------------------------------------------------
+*/
 
-                this.disabled = true;
-
-                this.innerHTML =
-                    '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
-
-
-                setTimeout(function () {
-
-                    showMessage(
-                        "Account deletion request submitted.",
-                        "success"
-                    );
+const currentPassword =
+    prompt(
+        "For security, enter your current password:"
+    );
 
 
-                    deleteAccountBtn.disabled =
-                        false;
+if (currentPassword === null) {
+
+    return;
+
+}
 
 
-                    deleteAccountBtn.innerHTML =
-                        '<i class="fa-solid fa-trash"></i> Delete Account';
+if (currentPassword.trim() === "") {
 
-                }, 1000);
+    showMessage(
+        "Current password is required.",
+        "error"
+    );
+
+    return;
+
+}
+
+
+this.disabled = true;
+
+this.innerHTML =
+    '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
+
+
+const formData =
+    new FormData();
+
+formData.append(
+    "current_password",
+    currentPassword
+);
+
+
+fetch(
+    "delete_account.php",
+    {
+        method: "POST",
+        body: formData
+    }
+)
+
+.then(function (response) {
+
+    return response.json();
+
+})
+
+.then(function (data) {
+
+    if (data.success) {
+
+        showMessage(
+            data.message,
+            "success"
+        );
+
+
+        setTimeout(function () {
+
+            window.location.href =
+                "login.php";
+
+        }, 1200);
+
+    }
+
+    else {
+
+        deleteAccountBtn.disabled =
+            false;
+
+        deleteAccountBtn.innerHTML =
+            '<i class="fa-solid fa-trash"></i> Delete Account';
+
+
+        showMessage(
+            data.message,
+            "error"
+        );
+
+    }
+
+})
+
+.catch(function (error) {
+
+    console.error(error);
+
+    deleteAccountBtn.disabled =
+        false;
+
+    deleteAccountBtn.innerHTML =
+        '<i class="fa-solid fa-trash"></i> Delete Account';
+
+
+    showMessage(
+        "Account deletion failed. Please try again.",
+        "error"
+    );
+
+});
 
             }
         );
@@ -1378,3 +1443,57 @@ if (saveAccountBtn) {
     );
 
 });
+
+/*==================================================
+              NOTIFICATION POPUP
+==================================================*/
+
+const notificationBtn =
+    document.getElementById("notificationBtn");
+
+const notificationPopup =
+    document.getElementById("notificationPopup");
+
+const notificationBadge =
+    document.getElementById("notificationBadge");
+
+
+if (notificationBtn && notificationPopup) {
+
+    notificationBtn.addEventListener(
+        "click",
+        function () {
+
+            notificationPopup.classList.toggle(
+                "show"
+            );
+
+            if (
+                notificationBadge &&
+                notificationBadge.textContent.trim() !== "0"
+            ) {
+
+                fetch(
+                    "mark_notifications_read.php",
+                    {
+                        method: "POST"
+                    }
+                )
+                .then(function () {
+
+                    notificationBadge.textContent =
+                        "0";
+
+                })
+                .catch(function (error) {
+
+                    console.error(error);
+
+                });
+
+            }
+
+        }
+    );
+
+}
