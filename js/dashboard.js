@@ -48,19 +48,6 @@ cards.forEach(function(card){
 
 
 
-//=========================================
-// NOTIFICATION ICON
-//=========================================
-
-const notification=document.querySelector(".notification");
-
-notification.addEventListener("click",function(){
-
-    alert("You have 3 new notifications.");
-
-});
-
-
 
 //=========================================
 // MENU TOGGLE (FOR MOBILE)
@@ -319,6 +306,61 @@ document.querySelectorAll("a").forEach(function(anchor){
 });
 
 
+/*==================================================
+              NOTIFICATION POPUP
+==================================================*/
+
+const notificationBtn =
+    document.getElementById("notificationBtn");
+
+const notificationPopup =
+    document.getElementById("notificationPopup");
+
+const notificationBadge =
+    document.getElementById("notificationBadge");
+
+
+if (notificationBtn && notificationPopup) {
+
+    notificationBtn.addEventListener(
+        "click",
+        function () {
+
+            notificationPopup.classList.toggle(
+                "show"
+            );
+
+
+            // Mark notifications as read
+
+            if (
+                notificationBadge &&
+                notificationBadge.textContent.trim() !== "0"
+            ) {
+
+                fetch(
+                    "mark_notifications_read.php",
+                    {
+                        method: "POST"
+                    }
+                )
+                .then(function () {
+
+                    notificationBadge.textContent = "0";
+
+                })
+                .catch(function (error) {
+
+                    console.error(error);
+
+                });
+
+            }
+
+        }
+    );
+
+}
 
 //=========================================
 // END OF FILE

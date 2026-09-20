@@ -19,6 +19,78 @@ require_once "db.php";
 
 $user_id = $_SESSION["user_id"];
 
+// Fetch unread notification count
+$notification_count_query = "
+    SELECT COUNT(*) AS notification_count
+    FROM notifications
+    WHERE user_id = ?
+    AND is_read = 0
+";
+
+$notification_count_stmt = mysqli_prepare(
+    $conn,
+    $notification_count_query
+);
+
+mysqli_stmt_bind_param(
+    $notification_count_stmt,
+    "i",
+    $user_id
+);
+
+mysqli_stmt_execute(
+    $notification_count_stmt
+);
+
+$notification_count_result =
+    mysqli_stmt_get_result(
+        $notification_count_stmt
+    );
+
+$notification_count_row =
+    mysqli_fetch_assoc(
+        $notification_count_result
+    );
+
+$notification_count =
+    $notification_count_row["notification_count"];
+
+mysqli_stmt_close(
+    $notification_count_stmt
+);
+
+
+// Fetch latest notifications
+$notifications_query = "
+    SELECT
+        message,
+        created_at
+    FROM notifications
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+    LIMIT 10
+";
+
+$notifications_stmt = mysqli_prepare(
+    $conn,
+    $notifications_query
+);
+
+mysqli_stmt_bind_param(
+    $notifications_stmt,
+    "i",
+    $user_id
+);
+
+mysqli_stmt_execute(
+    $notifications_stmt
+);
+
+$notifications_result =
+    mysqli_stmt_get_result(
+        $notifications_stmt
+    );
+
 $sql = "SELECT * FROM users WHERE user_id = ?";
 $stmt = mysqli_prepare($conn, $sql);
 
@@ -484,11 +556,85 @@ mysqli_stmt_close($stmt);
 
                 <div class="notification">
 
-                    <i class="fa-regular fa-bell"></i>
+    <button
+        type="button"
+        id="notificationBtn"
+        class="notification-btn"
+    >
 
-                    <span>3</span>
+        <i class="fa-regular fa-bell"></i>
+
+        <?php if ($notification_count > 0): ?>
+
+            <span
+                id="notificationBadge"
+                class="notification-badge"
+            >
+                <?php echo $notification_count; ?>
+            </span>
+
+        <?php endif; ?>
+
+    </button>
+
+
+    <!-- Notification Popup -->
+
+    <div
+        id="notificationPopup"
+        class="notification-popup"
+    >
+
+        <div class="notification-popup-header">
+
+            <strong>Notifications</strong>
+
+        </div>
+
+
+        <div class="notification-list">
+
+            <?php if (mysqli_num_rows($notifications_result) > 0): ?>
+
+                <?php while ($notification = mysqli_fetch_assoc($notifications_result)): ?>
+
+                    <div class="notification-item">
+
+                        <p>
+                            <?php
+                            echo htmlspecialchars(
+                                $notification["message"]
+                            );
+                            ?>
+                        </p>
+
+                        <small>
+                            <?php
+                            echo htmlspecialchars(
+                                $notification["created_at"]
+                            );
+                            ?>
+                        </small>
+
+                    </div>
+
+                <?php endwhile; ?>
+
+            <?php else: ?>
+
+                <div class="no-notifications">
+
+                    No notifications yet.
 
                 </div>
+
+            <?php endif; ?>
+
+        </div>
+
+    </div>
+
+</div>
 
                 <div class="user-profile">
 
